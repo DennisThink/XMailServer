@@ -53,6 +53,7 @@
 #include "MailSvr.h"
 //DennisThink
 #include "SysUtil.h"
+#include "ConfigUtil.h"
 //
 #define ENV_MAIN_PATH               "MAIL_ROOT"
 #define ENV_CMD_LINE                "MAIL_CMD_LINE"
@@ -1367,7 +1368,7 @@ static int SvrSetup(int iArgCount, char *pszArgs[])
 		}
 	}
 	//
-	strcpy(szMailPath, "C:\\Dennis\\XMail");
+	strcpy(szMailPath, ConfigUtil::GetMailMainPath().c_str());
 	if (strlen(szMailPath) == 0 || !SysExistDir(szMailPath)) {
 		ErrSetErrorCode(ERR_CONF_PATH);
 		return ERR_CONF_PATH;

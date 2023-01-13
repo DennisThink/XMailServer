@@ -32,7 +32,7 @@
 #include "QueueUtils.h"
 #include "AppDefines.h"
 #include "MailSvr.h"
-
+#include "logutil.h"
 #define RUNNING_PIDS_DIR            "/var/run"
 #define DEVNULL                     "/dev/null"
 #define NOFILE                      64
@@ -219,5 +219,14 @@ static int MnDaemonStartup(int iArgCount, char *pszArgs[])
 
 int main(int iArgCount, char *pszArgs[])
 {
+	{
+		auto console = spdlog::stdout_logger_mt("console");
+		spdlog::set_default_logger(console);
+		spdlog::set_pattern("%v [source %s:%# %!] ");
+		SPDLOG_INFO("Hello");
+		XMAIL_INFO("Hello");
+		//XMAIL_INFO("Hello {}",1);
+		//XMAIL_INFO("Hello {} {}",1,"world");
+	}
 	return MnDaemonStartup(iArgCount, pszArgs);
 }

@@ -46,6 +46,7 @@
 #include "UsrAuth.h"
 //DennisThink
 #include "SysUtil.h"
+#include "logutil.h"
 //
 #define SVR_TABLE_FILE              "mailusers.tab"
 #define SVR_ALIAS_FILE              "aliases.tab"
@@ -1024,8 +1025,8 @@ static UserInfo *UsrGetUserByNameLK(char const *pszUsrFilePath, char const *pszD
 					  pszDomain,
 					  pszName,
 					  NULL);
-
 	if (ppszTabTokens == NULL) {
+		XMAIL_ERROR("UserNotFound User:{} Domain:{} pszUsrFilePath:{}",pszName,pszDomain,pszUsrFilePath);
 		ErrSetErrorCode(ERR_USER_NOT_FOUND);
 		return NULL;
 	}
@@ -1039,10 +1040,11 @@ static UserInfo *UsrGetUserByNameLK(char const *pszUsrFilePath, char const *pszD
 
 UserInfo *UsrLookupUser(char const *pszDomain, char const *pszName)
 {
+	XMAIL_INFO("Damain:{} User:{}",pszDomain,pszName);
 	char szUsrFilePath[SYS_MAX_PATH];
 
 	UsrGetTableFilePath(szUsrFilePath, sizeof(szUsrFilePath));
-
+	XMAIL_INFO("FilePath:{} User:{}",szUsrFilePath,pszName);
 	char szResLock[SYS_MAX_PATH];
 	RLCK_HANDLE hResLock = RLckLockSH(CfgGetBasedPath(szUsrFilePath, szResLock,
 							  sizeof(szResLock)));
@@ -1051,7 +1053,7 @@ UserInfo *UsrLookupUser(char const *pszDomain, char const *pszName)
 		return NULL;
 
 	UserInfo *pUI = UsrGetUserByNameLK(szUsrFilePath, pszDomain, pszName);
-
+	XMAIL_INFO("FilePath:{} User:{}",szUsrFilePath,pszName);
 	RLckUnlockSH(hResLock);
 
 	return pUI;

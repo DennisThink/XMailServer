@@ -25,6 +25,7 @@
 #include "AppDefines.h"
 //DennisThink
 #include "SysUtil.h"
+#include "logutil.h"
 //
 #define MAX_TLS_KEYS                    64
 #define UNUSED_TLS_KEY_PROC             ((void (*)(void *)) -1L)
@@ -208,6 +209,7 @@ static int SysThreadCleanup(SYS_THREAD ThreadID)
 
 int SysInitLibrary(void)
 {
+	XMAIL_INFO("SysInitLibrary");
 	/* Setup timers */
 	LARGE_INTEGER PerfCntFreq;
 	LARGE_INTEGER PerfCntCurr;

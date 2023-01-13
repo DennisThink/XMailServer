@@ -22,7 +22,7 @@
 
 #ifndef _SYSTYPESUNIX_H
 #define _SYSTYPESUNIX_H
-
+#include <pthread.h>
 #ifdef MACH_BIG_ENDIAN_WORDS
 #define BIG_ENDIAN_CPU
 #endif

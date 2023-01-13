@@ -24,7 +24,10 @@
 #include "SysDep.h"
 #include "SysDepUnix.h"
 #include "AppDefines.h"
-
+//DennisThink
+#include "SysUtil.h"
+#include "logutil.h"
+//
 #define SCHED_PRIORITY_INC     5
 #define SYS_MAX_TH_EXIT_HOOKS  64
 #define SYS_PWAIT_HASHSIZE     101
@@ -262,10 +265,10 @@ static PidWaitData *SysCreatePidWait(pid_t PID)
 {
 	PidWaitData *pPWD;
 
-	if ((pPWD = (PidWaitData *) SysAlloc(sizeof(PidWaitData))) == NULL)
+	if ((pPWD = (PidWaitData *)SysUtil::SysAlloc(sizeof(PidWaitData))) == NULL)
 		return NULL;
 	if (pipe(pPWD->iPipeFds) == -1) {
-		SysFree(pPWD);
+	SysUtil::SysFree(pPWD);
 		ErrSetErrorCode(ERR_PIPE);
 		return NULL;
 	}
@@ -287,7 +290,7 @@ static void SysFreePidWait(PidWaitData *pPWD)
 		SYS_LIST_DEL(&pPWD->Lnk);
 		pthread_mutex_unlock(&PWaitMutex);
 		SYS_CLOSE_PIPE(pPWD->iPipeFds);
-		SysFree(pPWD);
+	SysUtil::SysFree(pPWD);
 	}
 }
 
@@ -376,7 +379,7 @@ static int SysThreadSetup(ThrData *pTD)
 static int SysFreeThreadData(ThrData *pTD)
 {
 	SysWaitCleanup(&pTD->Wait);
-	SysFree(pTD);
+SysUtil::SysFree(pTD);
 
 	return 0;
 }
@@ -813,22 +816,22 @@ int SysSendFileMMap(SYS_SOCKET SockFD, char const *pszFileName, SYS_OFF_T llBase
 
 #if !defined(SYS_HAS_SENDFILE)
 
-int SysSendFile(SYS_SOCKET SockFD, char const *pszFileName, SYS_OFF_T llBaseOffset,
+/*int SysSendFile(SYS_SOCKET SockFD, char const *pszFileName, SYS_OFF_T llBaseOffset,
 		SYS_OFF_T llEndOffset, int iTimeout)
 {
 	return SysSendFileMMap(SockFD, pszFileName, llBaseOffset, llEndOffset, iTimeout);
-}
+}*/
 
 #endif /* !SYS_HAS_SENDFILE */
 
 SYS_SEMAPHORE SysCreateSemaphore(int iInitCount, int iMaxCount)
 {
-	SemData *pSD = (SemData *) SysAlloc(sizeof(SemData));
+	SemData *pSD = (SemData *)SysUtil::SysAlloc(sizeof(SemData));
 
 	if (pSD == NULL)
 		return SYS_INVALID_SEMAPHORE;
 	if (SysWaitInit(&pSD->Wait) < 0) {
-		SysFree(pSD);
+	SysUtil::SysFree(pSD);
 		return SYS_INVALID_SEMAPHORE;
 	}
 	pSD->iSemCounter = iInitCount;
@@ -843,7 +846,7 @@ int SysCloseSemaphore(SYS_SEMAPHORE hSemaphore)
 
 	if (pSD != NULL) {
 		SysWaitCleanup(&pSD->Wait);
-		SysFree(pSD);
+	SysUtil::SysFree(pSD);
 	}
 
 	return 0;
@@ -905,12 +908,12 @@ int SysTryWaitSemaphore(SYS_SEMAPHORE hSemaphore)
 
 SYS_MUTEX SysCreateMutex(void)
 {
-	MutexData *pMD = (MutexData *) SysAlloc(sizeof(MutexData));
+	MutexData *pMD = (MutexData *)SysUtil::SysAlloc(sizeof(MutexData));
 
 	if (pMD == NULL)
 		return SYS_INVALID_MUTEX;
 	if (SysWaitInit(&pMD->Wait) < 0) {
-		SysFree(pMD);
+	SysUtil::SysFree(pMD);
 		return SYS_INVALID_MUTEX;
 	}
 	pMD->iLocked = 0;
@@ -924,7 +927,7 @@ int SysCloseMutex(SYS_MUTEX hMutex)
 
 	if (pMD != NULL) {
 		SysWaitCleanup(&pMD->Wait);
-		SysFree(pMD);
+	SysUtil::SysFree(pMD);
 	}
 
 	return 0;
@@ -981,12 +984,12 @@ int SysTryLockMutex(SYS_MUTEX hMutex)
 
 SYS_EVENT SysCreateEvent(int iManualReset)
 {
-	EventData *pED = (EventData *) SysAlloc(sizeof(EventData));
+	EventData *pED = (EventData *)SysUtil::SysAlloc(sizeof(EventData));
 
 	if (pED == NULL)
 		return SYS_INVALID_EVENT;
 	if (SysWaitInit(&pED->Wait) < 0) {
-		SysFree(pED);
+	SysUtil::SysFree(pED);
 		return SYS_INVALID_EVENT;
 	}
 	pED->iSignaled = 0;
@@ -1001,7 +1004,7 @@ int SysCloseEvent(SYS_EVENT hEvent)
 
 	if (pED != NULL) {
 		SysWaitCleanup(&pED->Wait);
-		SysFree(pED);
+	SysUtil::SysFree(pED);
 	}
 
 	return 0;
@@ -1082,11 +1085,11 @@ SYS_PEVENT SysCreatePEvent(int iManualReset)
 {
 	PEventData *pPED;
 
-	if ((pPED = (PEventData *) SysAlloc(sizeof(PEventData))) == NULL)
+	if ((pPED = (PEventData *)SysUtil::SysAlloc(sizeof(PEventData))) == NULL)
 		return SYS_INVALID_PEVENT;
 	pPED->iManualReset = iManualReset;
 	if ((pPED->hEventfd = SysEventfdCreate()) == SYS_INVALID_EVENTFD) {
-		SysFree(pPED);
+	SysUtil::SysFree(pPED);
 		return SYS_INVALID_PEVENT;
 	}
 
@@ -1099,7 +1102,7 @@ int SysClosePEvent(SYS_PEVENT hPEvent)
 
 	if (pPED != NULL) {
 		SysEventfdClose(pPED->hEventfd);
-		SysFree(pPED);
+	SysUtil::SysFree(pPED);
 	}
 
 	return 0;
@@ -1169,14 +1172,14 @@ SYS_THREAD SysCreateThread(unsigned int (*pThreadProc) (void *), void *pThreadDa
 	ThrData *pTD;
 	pthread_attr_t ThrAttr;
 
-	if ((pTD = (ThrData *) SysAlloc(sizeof(ThrData))) == NULL)
+	if ((pTD = (ThrData *)SysUtil::SysAlloc(sizeof(ThrData))) == NULL)
 		return SYS_INVALID_THREAD;
 	pTD->ThreadProc = pThreadProc;
 	pTD->pThreadData = pThreadData;
 	pTD->iExitCode = -1;
 	pTD->iUseCount = 2;
 	if (SysWaitInit(&pTD->Wait) < 0) {
-		SysFree(pTD);
+	SysUtil::SysFree(pTD);
 		return SYS_INVALID_THREAD;
 	}
 	pthread_attr_init(&ThrAttr);
@@ -1609,7 +1612,7 @@ SYS_HANDLE SysFirstFile(char const *pszPath, char *pszFileName, int iSize)
 		return SYS_INVALID_HANDLE;
 	}
 
-	FileFindData *pFFD = (FileFindData *) SysAlloc(sizeof(FileFindData));
+	FileFindData *pFFD = (FileFindData *)SysUtil::SysAlloc(sizeof(FileFindData));
 
 	if (pFFD == NULL) {
 		closedir(pDIR);
@@ -1630,8 +1633,8 @@ SYS_HANDLE SysFirstFile(char const *pszPath, char *pszFileName, int iSize)
 	if (stat(szFilePath, &pFFD->FStat) != 0) {
 		SysFree(pFFD);
 		closedir(pDIR);
-
 		ErrSetErrorCode(ERR_STAT);
+		XMAIL_DEBUG("ErrCode{} ErrMsg:{}",ERR_STAT,ErrGetErrorString(ERR_STAT));
 		return SYS_INVALID_HANDLE;
 	}
 
@@ -1674,6 +1677,7 @@ int SysNextFile(SYS_HANDLE hFind, char *pszFileName, int iSize)
 		 pFFD->FDE.DE.d_name);
 	if (stat(szFilePath, &pFFD->FStat) != 0) {
 		ErrSetErrorCode(ERR_STAT);
+		XMAIL_DEBUG("ErrCode{} ErrMsg:{}",ERR_STAT,ErrGetErrorString(ERR_STAT));
 		return 0;
 	}
 
@@ -1696,6 +1700,7 @@ int SysGetFileInfo(char const *pszFileName, SYS_FILE_INFO &FI)
 
 	if (stat(pszFileName, &stat_buffer) != 0) {
 		ErrSetErrorCode(ERR_STAT);
+		XMAIL_DEBUG("FileName:{} ErrCode{} ErrMsg:{}",pszFileName,ERR_STAT,ErrGetErrorString(ERR_STAT));
 		return ERR_STAT;
 	}
 
@@ -1866,11 +1871,12 @@ SYS_MMAP SysCreateMMap(char const *pszFileName, unsigned long ulFlags)
 
 	if (fstat(iFD, &StatBuf) < 0) {
 		close(iFD);
+		XMAIL_DEBUG("ErrCode{} ErrMsg:{}",ERR_STAT,ErrGetErrorString(ERR_STAT));
 		ErrSetErrorCode(ERR_STAT);
 		return SYS_INVALID_MMAP;
 	}
 
-	MMapData *pMMD = (MMapData *) SysAlloc(sizeof(MMapData));
+	MMapData *pMMD = (MMapData *)SysUtil::SysAlloc(sizeof(MMapData));
 
 	if (pMMD == NULL) {
 		close(iFD);

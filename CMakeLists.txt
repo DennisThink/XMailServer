@@ -1,10 +1,16 @@
 cmake_minimum_required(VERSION 3.0)
 project(XMailServer)
-
-add_definitions(-DWIN32)
+set(CMAKE_CXX_STANDARD 14)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    add_definitions(-D__LINUX__)
+    message(STATUS "This is Linux")
+else()
+    message(STATUS "This is Windows")
+    add_definitions(-DWIN32)
+    link_libraries(ws2_32)
+endif()
 include_directories(./include/)
 include_directories(./thirdparty/)
-link_libraries(ws2_32)
 SET(FILE_SOURCE  ./src/AliasDomain.cpp   
 ./src/Maildir.cpp      
 ./src/MiscUtils.cpp       
@@ -24,8 +30,7 @@ SET(FILE_SOURCE  ./src/AliasDomain.cpp
 ./src/SysDepCommon.cpp  
 ./src/UsrMailList.cpp
 ./src/Base64Enc.cpp  
-./src/MD5.cpp    
-./src/MainWin.cpp  
+./src/MD5.cpp
 ./src/SMAILSvr.cpp                     
 ./src/Errors.cpp               
 ./src/POP3Svr.cpp                       
@@ -39,7 +44,6 @@ SET(FILE_SOURCE  ./src/AliasDomain.cpp
 ./src/MailDomains.cpp  
 ./src/SMTPSvr.cpp   
 ./src/StrUtils.cpp 
-./src/SysDepWin.cpp             
 ./src/FINGSvr.cpp       
 ./src/PSYNCSvr.cpp   
 ./src/MailSvr.cpp 
@@ -51,4 +55,12 @@ SET(FILE_SOURCE  ./src/AliasDomain.cpp
 ./src/TabIndex.cpp
 ./src/SysUtil.cpp
 )
-add_executable(xmail ./src/MainWin.cpp ${FILE_SOURCE})
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    message(STATUS "This is Linux")
+    add_executable(xmail ./src/MainLinux.cpp ./src/SysDepLinux.cpp ./src/SysDepUnix.cpp ./src/SysOsEventfd_pipe.cpp ${FILE_SOURCE})
+else()
+    message(STATUS "This is Windows")
+    add_definitions(-DWIN32)
+    link_libraries(ws2_32)
+    add_executable(xmail ./src/MainWin.cpp ./src/SysDepWin.cpp ${FILE_SOURCE})
+endif()

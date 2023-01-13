@@ -114,6 +114,8 @@ int _tmain(int argc, TCHAR * argv[])
 		spdlog::set_pattern("%v [source %s:%# %!] ");
 	}
 	XMAIL_INFO("this is for test");
+	XMAIL_INFO("this is {}", 1);
+	XMAIL_INFO("this is {} {}", 1,"ehho");
 	/*int nRet = SvrMain(argc, argv);
 	std::cout << "SrvMain : " << nRet << std::endl;
 	char errMsg[128] = { 0 };

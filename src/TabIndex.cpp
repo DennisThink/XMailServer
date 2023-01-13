@@ -166,7 +166,7 @@ int TbixCreateIndex(char const *pszTabFilePath, int const *piFieldsIdx, bool bCa
 		pHashFunc = TbixCalculateHash;
 
 	/* Build index file name */
-	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) < 0)
+	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) != nullptr)
 		return ErrGetErrorCode();
 
 	if ((pTabFile = fopen(pszTabFilePath, "rb")) == NULL) {
@@ -465,7 +465,7 @@ char **TbixLookup(char const *pszTabFilePath, int const *piFieldsIdx, bool bCase
 	TabHashIndex THI;
 	char szIdxFile[SYS_MAX_PATH], szRefKey[KEY_BUFFER_SIZE];
 
-	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) < 0)
+	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) != nullptr)
 		return NULL;
 
 	/* Calculate key & hash */
@@ -520,7 +520,7 @@ char **TbixLookup(char const *pszTabFilePath, int const *piFieldsIdx, bool bCase
 		}
 	}
 	fclose(pTabFile);
-SysUtil::SysFree(pHashTable);
+	SysUtil::SysFree(pHashTable);
 
 	ErrSetErrorCode(ERR_RECORD_NOT_FOUND);
 
@@ -535,7 +535,7 @@ int TbixCheckIndex(char const *pszTabFilePath, int const *piFieldsIdx, bool bCas
 	char szIdxFile[SYS_MAX_PATH];
 
 	if (SysGetFileInfo(pszTabFilePath, FI_Tab) < 0 ||
-	    TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) < 0)
+	    TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) != nullptr)
 		return ErrGetErrorCode();
 	if (SysGetFileInfo(szIdxFile, FI_Index) < 0 || FI_Tab.tMod > FI_Index.tMod ||
 	    TbixCheckIndex(szIdxFile) < 0) {
@@ -559,7 +559,7 @@ INDEX_HANDLE TbixOpenHandle(char const *pszTabFilePath, int const *piFieldsIdx,
 	TabHashIndex THI;
 	char szIdxFile[SYS_MAX_PATH];
 
-	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) < 0 ||
+	if (TbixGetIndexFile(pszTabFilePath, piFieldsIdx, szIdxFile) != nullptr ||
 	    (hArray = ArrayCreate(TAB_INIT_RESSET_SIZE)) == INVALID_ARRAY_HANDLE)
 		return INVALID_INDEX_HANDLE;
 

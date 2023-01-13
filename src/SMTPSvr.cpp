@@ -50,6 +50,7 @@
 #include "MailSvr.h"
 //DennisThink
 #include "SysUtil.h"
+#include "logutil.h"
 //
 #define SMTP_MAX_LINE_SIZE      2048
 #define STD_SMTP_TIMEOUT        30000
@@ -2449,6 +2450,7 @@ static int SMTPExternalAuthenticate(BSOCK_HANDLE hBSock, SMTPSession &SMTPS,
 		return ErrorPop();
 	}
 	if (iExitCode != SVR_SMTP_EXTAUTH_SUCCESS) {
+		XMAIL_ERROR("503 Authentication failed User:{}",pszUsername);
 		SMTPSendError(hBSock, SMTPS, "503 Authentication failed");
 
 		ErrSetErrorCode(ERR_BAD_EXTRNPRG_EXITCODE);
@@ -2536,10 +2538,11 @@ static int SMTPTryApplyLocalAuth(SMTPSession &SMTPS, char const *pszUsername,
 	if (StrSplitString(pszUsername, POP3_USER_SPLITTERS, szAccountUser, sizeof(szAccountUser),
 			   szAccountDomain, sizeof(szAccountDomain)) < 0)
 		return ErrGetErrorCode();
-
+	XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pszPassword);
 	UserInfo *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
 
 	if (pUI != NULL) {
+		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pUI->pszPassword);
 		if (strcmp(pUI->pszPassword, pszPassword) == 0) {
 			/* Apply user configuration */
 			if (SMTPApplyUserConfig(SMTPS, pUI) < 0) {
@@ -2551,9 +2554,14 @@ static int SMTPTryApplyLocalAuth(SMTPSession &SMTPS, char const *pszUsername,
 
 			return 0;
 		}
+		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pUI->pszPassword);
 		UsrFreeUserInfo(pUI);
 	}
-
+	else
+	{
+		XMAIL_ERROR("No User For Domain:{} User:{}",szAccountDomain,szAccountUser);
+	}
+	XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pszPassword);
 	ErrSetErrorCode(ERR_SMTP_AUTH_FAILED);
 	return ERR_SMTP_AUTH_FAILED;
 }
@@ -2646,7 +2654,7 @@ static int SMTPDoAuthPlain(BSOCK_HANDLE hBSock, SMTPSession &SMTPS, char const *
 		if (SMTPTryApplyLocalAuth(SMTPS, pszUsername, pszPassword) < 0 &&
 		    SMTPTryApplyUsrPwdAuth(SMTPS, pszUsername, pszPassword) < 0) {
 			ErrorPush();
-
+			XMAIL_ERROR("503 Authentication failed User:{} {}",pszUsername,pszPassword);
 			SMTPSendError(hBSock, SMTPS, "503 Authentication failed");
 
 			return ErrorPop();
@@ -2727,7 +2735,7 @@ static int SMTPDoAuthLogin(BSOCK_HANDLE hBSock, SMTPSession &SMTPS, char const *
 		if (SMTPTryApplyLocalAuth(SMTPS, szUsername, szPassword) < 0 &&
 		    SMTPTryApplyUsrPwdAuth(SMTPS, szUsername, szPassword) < 0) {
 			ErrorPush();
-
+			XMAIL_ERROR("{} {} 503 Auth",szUsername,szPassword);
 			SMTPSendError(hBSock, SMTPS, "503 Authentication failed");
 
 			return ErrorPop();

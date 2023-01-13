@@ -24,6 +24,9 @@
 #include "SysDep.h"
 #include "SysDepUnix.h"
 #include "AppDefines.h"
+//DennisThink begin
+#include "SysUtil.h"
+//DennisThink end
 
 struct EventfdData {
 	pthread_mutex_t Mtx;
@@ -35,16 +38,16 @@ SYS_EVENTFD SysEventfdCreate(void)
 {
 	EventfdData *pEFD;
 
-	if ((pEFD = (EventfdData *) SysAlloc(sizeof(EventfdData))) == NULL)
+	if ((pEFD = (EventfdData *) SysUtil::SysAlloc(sizeof(EventfdData))) == NULL)
 		return SYS_INVALID_EVENTFD;
 	if (pthread_mutex_init(&pEFD->Mtx, NULL) != 0) {
-		SysFree(pEFD);
+		SysUtil::SysFree(pEFD);
 		ErrSetErrorCode(ERR_MUTEXINIT);
 		return SYS_INVALID_EVENTFD;
 	}
 	if (pipe(pEFD->PipeFds) == -1) {
 		pthread_mutex_destroy(&pEFD->Mtx);
-		SysFree(pEFD);
+		SysUtil::SysFree(pEFD);
 		ErrSetErrorCode(ERR_PIPE);
 		return SYS_INVALID_EVENTFD;
 	}
@@ -52,7 +55,7 @@ SYS_EVENTFD SysEventfdCreate(void)
 	    SysBlockFD(pEFD->PipeFds[1], 0) < 0) {
 		SYS_CLOSE_PIPE(pEFD->PipeFds);
 		pthread_mutex_destroy(&pEFD->Mtx);
-		SysFree(pEFD);
+		SysUtil::SysFree(pEFD);
 		return SYS_INVALID_EVENTFD;
 	}
 
@@ -66,7 +69,7 @@ int SysEventfdClose(SYS_EVENTFD hEventfd)
 	if (pEFD != NULL) {
 		SYS_CLOSE_PIPE(pEFD->PipeFds);
 		pthread_mutex_destroy(&pEFD->Mtx);
-		SysFree(pEFD);
+		SysUtil::SysFree(pEFD);
 	}
 
 	return 0;
