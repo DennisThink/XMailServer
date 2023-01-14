@@ -373,12 +373,12 @@ void UsrFreeUserInfo(UserInfo *pUI)
 {
 	UsrFreeInfoList(pUI->InfoList);
 
-SysUtil::SysFree(pUI->pszDomain);
-SysUtil::SysFree(pUI->pszPassword);
-SysUtil::SysFree(pUI->pszName);
-SysUtil::SysFree(pUI->pszPath);
-SysUtil::SysFree(pUI->pszType);
-SysUtil::SysFree(pUI);
+	SysUtil::SysFree(pUI->pszDomain);
+	SysUtil::SysFree(pUI->pszPassword);
+	SysUtil::SysFree(pUI->pszName);
+	SysUtil::SysFree(pUI->pszPath);
+	SysUtil::SysFree(pUI->pszType);
+	SysUtil::SysFree(pUI);
 }
 
 char *UsrGetUserInfoVar(UserInfo *pUI, char const *pszName, char const *pszDefault)

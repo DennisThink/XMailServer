@@ -5,7 +5,11 @@ class ConfigUtil
 {
 public:
     static std::string GetMailMainPath(){
+#ifdef WIN32
+        return "C:\\Dennis\\XMail";
+#else
         return "/home/dennis/XMail/";
+#endif
     };
 };
 #endif

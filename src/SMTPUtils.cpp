@@ -530,8 +530,9 @@ int USmtpRemoveGateway(char const *pszDomain)
 	return 0;
 }
 
-int USmtpIsAllowedRelay(const SYS_INET_ADDR &PeerInfo, SVRCFG_HANDLE hSvrConfig)
+int USmtpIsAllowedRelay(const SYS_INET_ADDR &PeerInfo, SVRCFG_HANDLE /*hSvrConfig*/)
 {
+	return 0;
 	char szRelayFilePath[SYS_MAX_PATH] = "";
 
 	USmtpGetRelayFilePath(szRelayFilePath, sizeof(szRelayFilePath));

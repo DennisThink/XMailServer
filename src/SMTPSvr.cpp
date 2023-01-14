@@ -51,6 +51,7 @@
 //DennisThink
 #include "SysUtil.h"
 #include "logutil.h"
+#include "UserUtils.h"
 //
 #define SMTP_MAX_LINE_SIZE      2048
 #define STD_SMTP_TIMEOUT        30000
@@ -748,6 +749,10 @@ static int SMTPGetUserSmtpPerms(UserInfo *pUI, SVRCFG_HANDLE hSvrConfig, char *p
 	return 0;
 }
 
+static int SMTPApplyUserConfig(SMTPSession& SMTPS, const UserInfoBean& userInfo)
+{
+	return 0;
+}
 static int SMTPApplyUserConfig(SMTPSession &SMTPS, UserInfo *pUI)
 {
 	/* Retrieve and apply permissions */
@@ -2007,7 +2012,7 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 
 			if (pszError != NULL) {
 				SMTPSendError(hBSock, SMTPS, "%s", pszError);
-			SysUtil::SysFree(pszError);
+				SysUtil::SysFree(pszError);
 			} else
 				BSckSendString(hBSock, "554 Transaction failed",
 					       SMTPS.pSMTPCfg->iTimeout);
@@ -2084,7 +2089,7 @@ static int SMTPHandleCmd_HELO(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 
 	BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout, "250 %s", pszDomain);
 
-SysUtil::SysFree(pszDomain);
+	SysUtil::SysFree(pszDomain);
 
 	SMTPS.iSMTPState = stateHelo;
 
@@ -2536,26 +2541,34 @@ static int SMTPTryApplyLocalAuth(SMTPSession &SMTPS, char const *pszUsername,
 	char szAccountDomain[MAX_HOST_NAME] = "";
 
 	if (StrSplitString(pszUsername, POP3_USER_SPLITTERS, szAccountUser, sizeof(szAccountUser),
-			   szAccountDomain, sizeof(szAccountDomain)) < 0)
+		szAccountDomain, sizeof(szAccountDomain)) < 0)
+	{
 		return ErrGetErrorCode();
+	}
 	XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pszPassword);
-	UserInfo *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
+	UserInfoBean userInfo = UserUtils::GetUserInfoByDomainAndName(szAccountDomain, szAccountUser);
+	//UserInfo *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
 
-	if (pUI != NULL) {
-		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pUI->pszPassword);
-		if (strcmp(pUI->pszPassword, pszPassword) == 0) {
+	//if (pUI != NULL) {
+	if(userInfo.Valid())
+	{
+		//XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pUI->pszPassword);
+		if (userInfo.m_strPassword == std::string(pszPassword)) 
+		{
 			/* Apply user configuration */
-			if (SMTPApplyUserConfig(SMTPS, pUI) < 0) {
-				ErrorPush();
-				UsrFreeUserInfo(pUI);
-				return ErrorPop();
+			if (SMTPApplyUserConfig(SMTPS, userInfo) < 0)
+			{
+				//ErrorPush();
+				//UsrFreeUserInfo(pUI);
+				//return ErrorPop();
+				return ERR_SMTP_AUTH_FAILED;
 			}
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 
 			return 0;
 		}
-		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,pUI->pszPassword);
-		UsrFreeUserInfo(pUI);
+		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,userInfo.m_strPassword);
+		//UsrFreeUserInfo(pUI);
 	}
 	else
 	{
@@ -3274,8 +3287,8 @@ unsigned int SMTPClientThread(void *pThreadData)
 		 * We may want to add verify code here ...
 		 */
 
-	SysUtil::SysFree(SslE.pszIssuer);
-	SysUtil::SysFree(SslE.pszSubject);
+		SysUtil::SysFree(SslE.pszIssuer);
+		SysUtil::SysFree(SslE.pszSubject);
 	}
 
 	/* Increase threads count */
@@ -3287,7 +3300,7 @@ unsigned int SMTPClientThread(void *pThreadData)
 				SMTP_SERVER_NAME, ErrGetErrorString(ErrorFetch()));
 
 		BSckDetach(hBSock, 1);
-	SysUtil::SysFree(pThCtx);
+	    SysUtil::SysFree(pThCtx);
 		return ErrorPop();
 	}
 
@@ -3299,7 +3312,7 @@ unsigned int SMTPClientThread(void *pThreadData)
 
 	/* Unlink socket from the bufferer and close it */
 	BSckDetach(hBSock, 1);
-SysUtil::SysFree(pThCtx);
+	SysUtil::SysFree(pThCtx);
 
 	return 0;
 }

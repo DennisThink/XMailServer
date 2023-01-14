@@ -47,6 +47,7 @@
 #include "MailSvr.h"
 //DennisThink
 #include "SysUtil.h"
+#include "UserUtils.h"
 //
 #define UPOP_IPMAP_FILE         "pop3.ipmap.tab"
 #define POP3_IP_LOGFILE         ".ipconn"
@@ -342,48 +343,54 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 {
 	UserInfo *pUI;
 	POP3SessionData *pPOPSD;
-
-	if ((pUI = UsrGetUserByName(pszDomain, pszUsrName)) == NULL)
+	//
+	UserInfoBean userInfo = UserUtils::GetUserInfoByDomainAndName(pszDomain, pszUsrName);
+	//if ((pUI = UsrGetUserByName(pszDomain, pszUsrName)) == NULL)
+	if (!userInfo.Valid())
+	{
 		return INVALID_POP3_HANDLE;
+	}
 
 	/* Check if the account is enabled for POP3 sessions */
-	if (!UsrGetUserInfoVarInt(pUI, "PopEnable", 1)) {
+	/*if (!UsrGetUserInfoVarInt(pUI, "PopEnable", 1)) {
 		UsrFreeUserInfo(pUI);
 		ErrSetErrorCode(ERR_USER_DISABLED);
 		return INVALID_POP3_HANDLE;
-	}
+	}*/
 	/* Check if peer is allowed to connect from its IP */
-	if (pPeerInfo != NULL && UPopCheckPeerIP(pUI, *pPeerInfo) < 0) {
+	/*if (pPeerInfo != NULL && UPopCheckPeerIP(pUI, *pPeerInfo) < 0) {
 		UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
-	}
-	if (pszUsrPass != NULL && strcmp(pszUsrPass, pUI->pszPassword) != 0) {
-		UsrFreeUserInfo(pUI);
+	}*/
+	///if (pszUsrPass != NULL && strcmp(pszUsrPass, userinfo.pszPassword) != 0) {
+	if(userInfo.m_strPassword != std::string(pszUsrPass)){
+		//UsrFreeUserInfo(pUI);
 		ErrSetErrorCode(ERR_INVALID_PASSWORD);
 		return INVALID_POP3_HANDLE;
 	}
-	if (UsrPOP3Lock(pUI) < 0) {
+	/*if (UsrPOP3Lock(pUI) < 0) {
 		UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
-	}
+	}*/
 
 	if ((pPOPSD = (POP3SessionData *)SysUtil::SysAlloc(sizeof(POP3SessionData))) == NULL) {
-		UsrPOP3Unlock(pUI);
-		UsrFreeUserInfo(pUI);
+		//UsrPOP3Unlock(pUI);
+		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}
 	pPOPSD->PeerInfo = *pPeerInfo;
-	pPOPSD->pUI = pUI;
+	//pPOPSD->pUI = pUI;
 	pPOPSD->iLastAccessed = 0;
 	pPOPSD->iTimeout = STD_POP3_TIMEOUT;
 
-	if (UPopBuildMessageList(pUI, &pPOPSD->MessageList, &pPOPSD->iMsgCount,
+	/*if (UPopBuildMessageList(pUI, &pPOPSD->MessageList, &pPOPSD->iMsgCount,
 				 &pPOPSD->llMBSize) < 0) {
-	SysUtil::SysFree(pPOPSD);
-		UsrPOP3Unlock(pUI);
-		UsrFreeUserInfo(pUI);
+		SysUtil::SysFree(pPOPSD);
+		//UsrPOP3Unlock(pUI);
+		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
-	}
+	}*/
+	return INVALID_POP3_HANDLE;
 
 	pPOPSD->iMsgListed = pPOPSD->iMsgCount;
 
@@ -391,9 +398,9 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 	if ((pPOPSD->ppMsgArray = (POP3MsgData **)
 	    SysUtil::SysAlloc((pPOPSD->iMsgCount + 1) * sizeof(POP3MsgData *))) == NULL) {
 		UPopFreeMessageList(&pPOPSD->MessageList);
-	SysUtil::SysFree(pPOPSD);
-		UsrPOP3Unlock(pUI);
-		UsrFreeUserInfo(pUI);
+		SysUtil::SysFree(pPOPSD);
+		//UsrPOP3Unlock(pUI);
+		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}
 
