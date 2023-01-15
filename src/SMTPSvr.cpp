@@ -162,9 +162,12 @@ struct SMTPSessionBean
 	FILE* pMsgFile;
 	std::string m_strFrom;
 	//char* pszFrom;
-	char* pszRcpt;
-	char* pszSendRcpt;
-	char* pszRealRcpt;
+	std::string m_strRcpt;
+	//char* pszRcpt;
+	std::string m_strSendRcpt;
+	//char* pszSendRcpt;
+	std::string m_strRealRcpt;
+	//char* pszRealRcpt;
 	int iRcptCount;
 	int iErrorsCount;
 	int iErrorsMax;
@@ -173,9 +176,11 @@ struct SMTPSessionBean
 	char szTimeStamp[256];
 	unsigned long ulSetupFlags;
 	unsigned long ulFlags;
-	char* pszCustMsg;
+	std::string m_strCustMsg;
+	//char* pszCustMsg;
 	char szRejMapName[256];
-	char* pszNoTLSAuths;
+	std::string m_strNoTLSAuths;
+	//char* pszNoTLSAuths;
 };
 
 enum SmtpAuthFields {
@@ -594,9 +599,9 @@ static int SMTPInitSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock,
 	SMTPS.pSMTPCfg = NULL;
 	SMTPS.pMsgFile = NULL;
 	SMTPS.m_strFrom.clear();
-	SMTPS.pszRcpt = NULL;
-	SMTPS.pszSendRcpt = NULL;
-	SMTPS.pszRealRcpt = NULL;
+	//SMTPS.pszRcpt = NULL;
+	//SMTPS.pszSendRcpt = NULL;
+	//SMTPS.pszRealRcpt = NULL;
 	SMTPS.iRcptCount = 0;
 	SMTPS.iErrorsCount = 0;
 	SMTPS.iErrorsMax = 0;
@@ -610,8 +615,8 @@ static int SMTPInitSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock,
 	SetEmptyString(SMTPS.szRejMapName);
 	SMTPS.ulFlags = 0;
 	SMTPS.ulSetupFlags = 0;
-	SMTPS.pszCustMsg = NULL;
-	SMTPS.pszNoTLSAuths = NULL;
+	//SMTPS.pszCustMsg = NULL;
+	//SMTPS.pszNoTLSAuths = NULL;
 
 	MscSafeGetTmpFile(SMTPS.szMsgFile, sizeof(SMTPS.szMsgFile));
 
@@ -708,10 +713,10 @@ static int SMTPInitSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock,
 	SMTPS.ulFlags |= SMTPS.ulSetupFlags;
 
 	/* Get custom message to append to the SMTP response */
-	SMTPS.pszCustMsg = SvrGetConfigVar(SMTPS.hSvrConfig, "CustomSMTPMessage");
+	SMTPS.m_strCustMsg = SvrGetConfigVar(SMTPS.hSvrConfig, "CustomSMTPMessage");
 
 	/* Get custom message to append to the SMTP response */
-	SMTPS.pszNoTLSAuths = SvrGetConfigVar(SMTPS.hSvrConfig, "SmtpNoTLSAuths");
+	SMTPS.m_strNoTLSAuths = SvrGetConfigVar(SMTPS.hSvrConfig, "SmtpNoTLSAuths");
 
 	return 0;
 }
@@ -728,11 +733,10 @@ static void SMTPClearSession(SMTPSessionBean &SMTPS)
 
 	SysFreeNullify(SMTPS.pSMTPCfg);
 	SMTPS.m_strFrom.clear();
-	SysFreeNullify(SMTPS.pszRcpt);
-	SysFreeNullify(SMTPS.pszSendRcpt);
-	SysFreeNullify(SMTPS.pszRealRcpt);
-	SysFreeNullify(SMTPS.pszCustMsg);
-	SysFreeNullify(SMTPS.pszNoTLSAuths);
+	//SysFreeNullify(SMTPS.pszSendRcpt);
+	//SysFreeNullify(SMTPS.pszRealRcpt);
+	//SysFreeNullify(SMTPS.pszCustMsg);
+	//SysFreeNullify(SMTPS.pszNoTLSAuths);
 }
 
 static void SMTPResetSession(SMTPSessionBean &SMTPS)
@@ -748,9 +752,8 @@ static void SMTPResetSession(SMTPSessionBean &SMTPS)
 
 	SetEmptyString(SMTPS.szDestDomain);
 	//SysFreeNullify(SMTPS.pszFrom);
-	SysFreeNullify(SMTPS.pszRcpt);
-	SysFreeNullify(SMTPS.pszSendRcpt);
-	SysFreeNullify(SMTPS.pszRealRcpt);
+	//SysFreeNullify(SMTPS.pszSendRcpt);
+	//SysFreeNullify(SMTPS.pszRealRcpt);
 
 	SMTPS.iSMTPState = (SMTPS.ulFlags & SMTPF_AUTHENTICATED) ? stateAuthenticated:
 		Min(SMTPS.iSMTPState, stateHelo);
@@ -828,7 +831,7 @@ static int SMTPSendError(BSOCK_HANDLE hBSock, SMTPSessionBean &SMTPS, char const
 	if (pszBuffer == NULL)
 		return ErrGetErrorCode();
 
-	if (SMTPS.pszCustMsg == NULL) {
+	if (SMTPS.m_strCustMsg.empty()) {
 		if (BSckSendString(hBSock, pszBuffer, SMTPS.pSMTPCfg->iTimeout) < 0) {
 			ErrorPush();
 		SysUtil::SysFree(pszBuffer);
@@ -836,7 +839,7 @@ static int SMTPSendError(BSOCK_HANDLE hBSock, SMTPSessionBean &SMTPS, char const
 		}
 	} else {
 		if (BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout,
-				    "%s - %s", pszBuffer, SMTPS.pszCustMsg) < 0) {
+				    "%s - %s", pszBuffer, SMTPS.m_strCustMsg.c_str()) < 0) {
 			ErrorPush();
 		SysUtil::SysFree(pszBuffer);
 			return ErrorPop();
@@ -1211,13 +1214,14 @@ static char *SMTPMacroLkupProc(void *pPrivate, char const *pszName, int iSize)
 		}
 		//return SysStrDup(pSMTPS->pszFrom != NULL ? pSMTPS->pszFrom: "-");
 	} else if (MemMatch(pszName, iSize, "CRCPT", 5)) {
-
-		return SysStrDup(pSMTPS->pszRcpt != NULL ? pSMTPS->pszRcpt: "-");
+		//return SysStrDup(pSMTPS->pszRcpt != NULL ? pSMTPS->pszRcpt: "-");
+		return "-";
 	} else if (MemMatch(pszName, iSize, "RRCPT", 5)) {
 
-		return SysStrDup(pSMTPS->pszRealRcpt != NULL ?
-				 pSMTPS->pszRealRcpt: pSMTPS->pszRcpt != NULL ?
-				 pSMTPS->pszRcpt: "-");
+		//return SysStrDup(pSMTPS->pszRealRcpt != NULL ?
+		//		 pSMTPS->pszRealRcpt: pSMTPS->pszRcpt != NULL ?
+		///		 pSMTPS->pszRcpt: "-");
+		return "-";
 	} else if (MemMatch(pszName, iSize, "FILE", 4)) {
 
 		return SysStrDup(pSMTPS->szMsgFile);
@@ -1279,11 +1283,15 @@ static int SMTPLogFilter(SMTPSessionBean &SMTPS, char const *const *ppszExec, in
 	 * filters, it makes sense to log the current recipient for each filter
 	 * execution.
 	 */
-	if (SMTPS.pszRcpt != NULL)
-		FLI.pszRecipient = (SMTPS.iRcptCount == 1 ||
-				    strcmp(pszType, SMTP_POST_RCPT_FILTER) == 0) ? SMTPS.pszRcpt: "*";
+	if (!SMTPS.m_strRcpt.empty())
+	{
+		//FLI.pszRecipient = (SMTPS.iRcptCount == 1 ||
+		//	strcmp(pszType, SMTP_POST_RCPT_FILTER) == 0) ? SMTPS.pszRcpt : "*";
+	}
 	else
+	{
 		FLI.pszRecipient = "";
+	}
 	FLI.LocalAddr = SMTPS.SockInfo;
 	FLI.RemoteAddr = SMTPS.PeerInfo;
 	FLI.ppszExec = ppszExec;
@@ -1638,9 +1646,9 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 	 * Setup SendRcpt string (it'll be used to build "RCPT TO:<>" line into
 	 * the message file)
 	 */
-SysUtil::SysFree(SMTPS.pszSendRcpt);
-
-	if ((SMTPS.pszSendRcpt = USmtpBuildRcptPath(ppszFwdDomains, SMTPS.hSvrConfig)) == NULL) {
+	//SysUtil::SysFree(SMTPS.pszSendRcpt);
+	SMTPS.m_strSendRcpt = USmtpBuildRcptPath(ppszFwdDomains, SMTPS.hSvrConfig);
+	if (SMTPS.m_strSendRcpt.empty()) {
 		ErrorPush();
 
 		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
@@ -1657,12 +1665,14 @@ SysUtil::SysFree(SMTPS.pszSendRcpt);
 	 * Setup Rcpt string. This needs to be done before filter execution,
 	 * since the CRCPT macro substitution needs that information.
 	 */
-SysUtil::SysFree(SMTPS.pszRcpt);
-	SMTPS.pszRcpt = SysStrDup(ppszFwdDomains[0]);
+	//SysUtil::SysFree(SMTPS.pszRcpt);
+	SMTPS.m_strRcpt = std::string(ppszFwdDomains[0]);
 
 	/* Setup the Real Rcpt string */
 	if (!IsEmptyString(szRealUser))
-		SMTPS.pszRealRcpt = SysStrDup(szRealUser);
+	{
+		SMTPS.m_strRealRcpt = (szRealUser);
+	}
 
 	/*
 	 * Call the post-rcpt filter.
@@ -1754,8 +1764,10 @@ static int SMTPHandleCmd_RCPT(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 		//SMTPLogSession(SMTPS, SMTPS.pszFrom, SMTPS.pszRcpt, "RCPT=OK", 0);
 
 	/* Write RCPT TO ( 5th[,...] row(s) of the smtp-mail file ) */
-	fprintf(SMTPS.pMsgFile, "RCPT TO:<%s> {ra=%s}\r\n", SMTPS.pszSendRcpt,
-		(SMTPS.pszRealRcpt != NULL) ? SMTPS.pszRealRcpt: SMTPS.pszSendRcpt);
+	{
+		fprintf(SMTPS.pMsgFile, "RCPT TO:<%s> {ra=%s}\r\n", SMTPS.m_strSendRcpt.c_str(),
+			(!SMTPS.m_strRealRcpt.empty()) ? SMTPS.m_strRealRcpt.c_str() : SMTPS.m_strSendRcpt.c_str());
+	}
 
 	BSckSendString(hBSock, "250 OK", SMTPS.pSMTPCfg->iTimeout);
 
@@ -2217,7 +2229,7 @@ static int SMTPListAuths(DynString *pDS, SMTPSessionBean &SMTPS, int iLinkSSL)
 				continue;
 			if (StrStringsCount(ppszStrings) > 1) {
 				SMTPAddAuth(pszAuths, CountOf(pszAuths), &iNumAuths,
-					    ppszStrings[0], SMTPS.pszNoTLSAuths,
+					    ppszStrings[0], SMTPS.m_strNoTLSAuths.c_str(),
 					    iLinkSSL);
 				iExtAuthCnt++;
 			}
@@ -2237,11 +2249,11 @@ static int SMTPListAuths(DynString *pDS, SMTPSessionBean &SMTPS, int iLinkSSL)
 	 */
 	if (iExtAuthCnt == 0) {
 		SMTPAddAuth(pszAuths, CountOf(pszAuths), &iNumAuths,
-			    "LOGIN", SMTPS.pszNoTLSAuths, iLinkSSL);
+			    "LOGIN", SMTPS.m_strNoTLSAuths.c_str(), iLinkSSL);
 		SMTPAddAuth(pszAuths, CountOf(pszAuths), &iNumAuths,
-			    "PLAIN", SMTPS.pszNoTLSAuths, iLinkSSL);
+			    "PLAIN", SMTPS.m_strNoTLSAuths.c_str(), iLinkSSL);
 		SMTPAddAuth(pszAuths, CountOf(pszAuths), &iNumAuths,
-			    "CRAM-MD5", SMTPS.pszNoTLSAuths, iLinkSSL);
+			    "CRAM-MD5", SMTPS.m_strNoTLSAuths.c_str(), iLinkSSL);
 	}
 	if (iNumAuths > 0) {
 		int i;
@@ -3027,9 +3039,9 @@ static int SMTPHandleCmd_AUTH(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	 * Check if the client sent an AUTH type that is not allowed in non-TLS
 	 * mode.
 	 */
-	if (SMTPS.pszNoTLSAuths != NULL &&
+	if (!SMTPS.m_strNoTLSAuths.empty() &&
 	    strcmp(BSckBioName(hBSock), BSSL_BIO_NAME) != 0 &&
-	    StrLimIStr(SMTPS.pszNoTLSAuths, szAuthType, ",") == NULL) {
+	    StrLimIStr(SMTPS.m_strNoTLSAuths.c_str(), szAuthType, ",") == NULL) {
 		SMTPSendError(hBSock, SMTPS, "504 Unrecognized authentication type");
 		ErrSetErrorCode(ERR_UNKNOWN_SMTP_AUTH);
 		return ERR_UNKNOWN_SMTP_AUTH;
