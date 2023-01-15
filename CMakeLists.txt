@@ -58,6 +58,7 @@ SET(FILE_SOURCE  ./src/AliasDomain.cpp
 ./src/SysUtil.cpp
 ./src/UserUtil.cpp
 ./src/CDBUtil.cpp
+./src/XMailConfig.cpp
 )
 
 SET(DB_SOURCE_FILE 
