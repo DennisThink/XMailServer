@@ -134,6 +134,7 @@ static int UAthExecAuthOp(char const *pszService, char const *pszAuthOp,
 			  char const *pszDomain, char const *pszUsername,
 			  char const *pszPassword, UserInfo *pUI)
 {
+	return 0;
 	char szAuthConfigPath[SYS_MAX_PATH] = "";
 
 	if (UAthGetConfigPath(pszService, pszDomain, szAuthConfigPath) < 0)

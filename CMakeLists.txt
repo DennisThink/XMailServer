@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.0)
 project(XMailServer)
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     add_definitions(-D__LINUX__)
     message(STATUS "This is Linux")
@@ -59,6 +59,7 @@ SET(FILE_SOURCE  ./src/AliasDomain.cpp
 ./src/UserUtil.cpp
 ./src/CDBUtil.cpp
 ./src/XMailConfig.cpp
+./src/SmtpConfig.cpp
 )
 
 SET(DB_SOURCE_FILE 

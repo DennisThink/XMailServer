@@ -67,7 +67,7 @@
 
 struct POP3ChannelCfg {
 	unsigned long ulFlags;
-	char *pszIFace;
+	std::string m_strIFace;
 };
 
 struct POP3SyncMsg {
@@ -101,7 +101,8 @@ struct POP3MsgData {
 
 struct POP3SessionData {
 	SYS_INET_ADDR PeerInfo;
-	UserInfo *pUI;
+	UserInfoBean m_userInfo;
+	//UserInfo *pUI;
 	SysListHead MessageList;
 	POP3MsgData **ppMsgArray;
 	int iMsgListed;
@@ -363,7 +364,7 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 		return INVALID_POP3_HANDLE;
 	}*/
 	///if (pszUsrPass != NULL && strcmp(pszUsrPass, userinfo.pszPassword) != 0) {
-	if(userInfo.m_strPassword != std::string(pszUsrPass)){
+	if(pszUsrPass && userInfo.m_strPassword != std::string(pszUsrPass)){
 		//UsrFreeUserInfo(pUI);
 		ErrSetErrorCode(ERR_INVALID_PASSWORD);
 		return INVALID_POP3_HANDLE;
@@ -390,7 +391,7 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}*/
-	return INVALID_POP3_HANDLE;
+	//return INVALID_POP3_HANDLE;
 
 	pPOPSD->iMsgListed = pPOPSD->iMsgCount;
 
@@ -408,10 +409,10 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 	SysListHead *pPos;
 	POP3MsgData *pPOPMD;
 
-	SYS_LIST_FOR_EACH(pPos, &pPOPSD->MessageList) {
+	/*SYS_LIST_FOR_EACH(pPos, &pPOPSD->MessageList) {
 		pPOPMD = SYS_LIST_ENTRY(pPos, POP3MsgData, LLnk);
 		pPOPSD->ppMsgArray[i++] = pPOPMD;
-	}
+	}*/
 
 	return (POP3_HANDLE) pPOPSD;
 }
@@ -422,7 +423,7 @@ static int UPopUpdateMailbox(POP3SessionData *pPOPSD)
 	POP3MsgData *pPOPMD;
 	char szMBPath[SYS_MAX_PATH];
 
-	UsrGetMailboxPath(pPOPSD->pUI, szMBPath, sizeof(szMBPath), 0);
+	//UsrGetMailboxPath(pPOPSD->m_userInfo, szMBPath, sizeof(szMBPath), 0);
 
 	char szResLock[SYS_MAX_PATH];
 	RLCK_HANDLE hResLock = RLckLockEX(CfgGetBasedPath(szMBPath, szResLock,
@@ -430,7 +431,7 @@ static int UPopUpdateMailbox(POP3SessionData *pPOPSD)
 
 	if (hResLock == INVALID_RLCK_HANDLE)
 		return ErrGetErrorCode();
-	SYS_LIST_FOR_EACH(pPos, &pPOPSD->MessageList) {
+	/*SYS_LIST_FOR_EACH(pPos, &pPOPSD->MessageList) {
 		pPOPMD = SYS_LIST_ENTRY(pPos, POP3MsgData, LLnk);
 		if (pPOPMD->ulFlags & POPF_MSG_DELETED) {
 			char szMsgPath[SYS_MAX_PATH];
@@ -439,7 +440,7 @@ static int UPopUpdateMailbox(POP3SessionData *pPOPSD)
 				    szMBPath, pPOPMD->szMsgName);
 			SysRemove(szMsgPath);
 		}
-	}
+	}*/
 	RLckUnlockEX(hResLock);
 
 	return 0;
@@ -450,9 +451,11 @@ void UPopReleaseSession(POP3_HANDLE hPOPSession, int iUpdate)
 	POP3SessionData *pPOPSD = (POP3SessionData *) hPOPSession;
 
 	if (iUpdate)
+	{
 		UPopUpdateMailbox(pPOPSD);
-	UsrPOP3Unlock(pPOPSD->pUI);
-	UsrFreeUserInfo(pPOPSD->pUI);
+	}
+	//UsrPOP3Unlock(pPOPSD->pUI);
+	//UsrFreeUserInfo(pPOPSD->pUI);
 	UPopFreeMessageList(&pPOPSD->MessageList);
 SysUtil::SysFree(pPOPSD->ppMsgArray);
 SysUtil::SysFree(pPOPSD);
@@ -462,8 +465,8 @@ char *UPopGetUserInfoVar(POP3_HANDLE hPOPSession, char const *pszName,
 			 char const *pszDefault)
 {
 	POP3SessionData *pPOPSD = (POP3SessionData *) hPOPSession;
-
-	return UsrGetUserInfoVar(pPOPSD->pUI, pszName, pszDefault);
+	return nullptr;
+	//return UsrGetUserInfoVar(pPOPSD->pUI, pszName, pszDefault);
 }
 
 int UPopGetSessionMsgCurrent(POP3_HANDLE hPOPSession)
@@ -634,7 +637,7 @@ int UPopSessionSendMsg(POP3_HANDLE hPOPSession, int iMsgIndex, BSOCK_HANDLE hBSo
 		return ERR_MSG_DELETED;
 	}
 
-	UsrGetMailboxPath(pPOPSD->pUI, szMsgFilePath, sizeof(szMsgFilePath), 1);
+	//UsrGetMailboxPath(pPOPSD->pUI, szMsgFilePath, sizeof(szMsgFilePath), 1);
 	StrNCat(szMsgFilePath, pPOPMD->szMsgName, sizeof(szMsgFilePath));
 
 	SysSNPrintf(szResponse, sizeof(szResponse) - 1,
@@ -676,7 +679,7 @@ int UPopSessionTopMsg(POP3_HANDLE hPOPSession, int iMsgIndex, int iNumLines,
 		return ERR_MSG_DELETED;
 	}
 
-	UsrGetMailboxPath(pPOPSD->pUI, szMsgFilePath, sizeof(szMsgFilePath), 1);
+	//UsrGetMailboxPath(pPOPSD->pUI, szMsgFilePath, sizeof(szMsgFilePath), 1);
 	StrNCat(szMsgFilePath, pPOPMD->szMsgName, sizeof(szMsgFilePath));
 
 	if ((pMsgFile = fopen(szMsgFilePath, "rb")) == NULL) {
@@ -736,7 +739,7 @@ int UPopSaveUserIP(POP3_HANDLE hPOPSession)
 	POP3SessionData *pPOPSD = (POP3SessionData *) hPOPSession;
 	char szIpFilePath[SYS_MAX_PATH];
 
-	UPopGetIpLogFilePath(pPOPSD->pUI, szIpFilePath, sizeof(szIpFilePath));
+	//UPopGetIpLogFilePath(pPOPSD->pUI, szIpFilePath, sizeof(szIpFilePath));
 
 	char szIP[128] = "???.???.???.???";
 
@@ -900,10 +903,10 @@ static BSOCK_HANDLE UPopCreateChannel(char const *pszServer, char const *pszUser
 	/*
 	 * Are we requested to bind to a specific interface to talk to this server?
 	 */
-	if (pChCfg->pszIFace != NULL) {
+	if (pChCfg->m_strIFace.empty()) {
 		SYS_INET_ADDR BndAddr;
 
-		if (MscGetServerAddress(pChCfg->pszIFace, BndAddr, 0) < 0 ||
+		if (MscGetServerAddress(pChCfg->m_strIFace.c_str(), BndAddr, 0) < 0 ||
 		    SysBindSocket(SockFD, &BndAddr) < 0) {
 			SysCloseSocket(SockFD);
 			return INVALID_BSOCK_HANDLE;
@@ -1095,8 +1098,7 @@ static int UPopChanConfigAssign(void *pPrivate, char const *pszName, char const 
 			pChCfg->ulFlags |= POPCHF_LEAVE_MSGS;
 	} else if (strcmp(pszName, "OutBind") == 0) {
 		if (pszValue != NULL) {
-		SysUtil::SysFree(pChCfg->pszIFace);
-			pChCfg->pszIFace = SysStrDup(pszValue);
+			pChCfg->m_strIFace = (pszValue);
 		}
 	}
 
@@ -1108,10 +1110,6 @@ static int UPopSetChanConfig(char const *pszAuthType, POP3ChannelCfg *pChCfg)
 	return MscParseOptions(pszAuthType, UPopChanConfigAssign, pChCfg);
 }
 
-static void UPopFreeChanConfig(POP3ChannelCfg *pChCfg)
-{
-SysUtil::SysFree(pChCfg->pszIFace);
-}
 
 static POP3SyncMsg *UPopSChanMsgAlloc(int iMsgSeq, char const *pszMsgID)
 {
@@ -1364,12 +1362,10 @@ static void UPopSChanFree(POP3SyncChannel *pPSChan)
 		SYS_LIST_DEL(&pSMsg->LLnk);
 		UPopSChanMsgFree(pSMsg);
 	}
-SysUtil::SysFree(pPSChan->ppSMsg);
-	UPopCloseChannel(pPSChan->hBSock);
-	UPopFreeChanConfig(&pPSChan->ChCfg);
-SysUtil::SysFree(pPSChan->pszRmtServer);
-SysUtil::SysFree(pPSChan->pszRmtName);
-SysUtil::SysFree(pPSChan);
+	SysUtil::SysFree(pPSChan->ppSMsg);
+	SysUtil::SysFree(pPSChan->pszRmtServer);
+	SysUtil::SysFree(pPSChan->pszRmtName);
+	SysUtil::SysFree(pPSChan);
 }
 
 static POP3SyncChannel *UPopSChanCreate(char const *pszRmtServer, char const *pszRmtName,
@@ -1388,7 +1384,7 @@ static POP3SyncChannel *UPopSChanCreate(char const *pszRmtServer, char const *ps
 	/* Connection to POP3 server */
 	if ((pPSChan->hBSock = UPopCreateChannel(pszRmtServer, pszRmtName, pszRmtPassword,
 						 &pPSChan->ChCfg)) == INVALID_BSOCK_HANDLE) {
-		UPopFreeChanConfig(&pPSChan->ChCfg);
+		
 	SysUtil::SysFree(pPSChan);
 		return NULL;
 	}

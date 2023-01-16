@@ -1,4 +1,4 @@
-/*
+﻿/*
  *  XMail by Davide Libenzi (Intranet and Internet mail server)
  *  Copyright (C) 1999,..,2010  Davide Libenzi
  *
@@ -53,6 +53,8 @@
 #include "logutil.h"
 #include "UserUtils.h"
 #include "XMailConfig.h"
+#include "SmtpConfig.h"
+#include <format>
 //
 #define SMTP_MAX_LINE_SIZE      2048
 #define STD_SMTP_TIMEOUT        30000
@@ -108,43 +110,9 @@ enum SMTPStates {
 	stateExit
 };
 
-/*struct SMTPSessionBean {
-	int iSMTPState;
-	ThreadConfig const *pThCfg;
-	SMTPConfig *pSMTPCfg;
-	SVRCFG_HANDLE hSvrConfig;
-	SYS_INET_ADDR PeerInfo;
-	SYS_INET_ADDR SockInfo;
-	int iCmdDelay;
-	unsigned long ulMaxMsgSize;
-	char szSvrFQDN[MAX_ADDR_NAME];
-	char szSvrDomain[MAX_ADDR_NAME];
-	char szClientFQDN[MAX_ADDR_NAME];
-	char szClientDomain[MAX_ADDR_NAME];
-	char szDestDomain[MAX_ADDR_NAME];
-	char szLogonUser[128];
-	char szMsgFile[SYS_MAX_PATH];
-	FILE *pMsgFile;
-	char *pszFrom;
-	char *pszRcpt;
-	char *pszSendRcpt;
-	char *pszRealRcpt;
-	int iRcptCount;
-	int iErrorsCount;
-	int iErrorsMax;
-	SYS_UINT64 ullMessageID;
-	char szMessageID[128];
-	char szTimeStamp[256];
-	unsigned long ulSetupFlags;
-	unsigned long ulFlags;
-	char *pszCustMsg;
-	char szRejMapName[256];
-	char *pszNoTLSAuths;
-};*/
-
 struct SMTPSessionBean
 {
-	int iSMTPState;
+	SMTPStates iSMTPState;
 	ThreadConfig const* pThCfg;
 	SMTPConfig* pSMTPCfg;
 	SVRCFG_HANDLE hSvrConfig;
@@ -298,13 +266,13 @@ static int SMTPThreadCountAdd(long lCount, SHB_HANDLE hShbSMTP, SMTPConfig *pSMT
 static int SMTPCheckSysResources(SVRCFG_HANDLE hSvrConfig)
 {
 	/* Check disk space */
-	int iMinValue = SvrGetConfigInt("SmtpMinDiskSpace", -1, hSvrConfig);
+	int iMinValue = SmtpConfig::GetSmtpMinDiskSpace();
 
 	if ((iMinValue > 0) && (SvrCheckDiskSpace(1024 * (unsigned long) iMinValue) < 0))
 		return ErrGetErrorCode();
 
 	/* Check virtual memory */
-	if (((iMinValue = SvrGetConfigInt("SmtpMinVirtMemSpace", -1, hSvrConfig)) > 0) &&
+	if (((iMinValue = SmtpConfig::GetSmtpMinVirtMemSpace()) > 0) &&
 	    (SvrCheckVirtMemSpace(1024 * (unsigned long) iMinValue) < 0))
 		return ErrGetErrorCode();
 
@@ -345,6 +313,12 @@ static int SMTPApplyIPProps(SMTPSessionBean &SMTPS)
 				 SMTPEnumIPPropsCB, &SMTPS);
 }
 
+static int SMTPLogSession(SMTPSessionBean& SMTPS,const std::string& pszSender,
+	const std::string& pszRecipient, const std::string& pszStatus,
+	unsigned long ulMsgSize)
+{
+	return 0;
+}
 static int SMTPLogSession(SMTPSessionBean &SMTPS, char const *pszSender,
 			  char const *pszRecipient, char const *pszStatus,
 			  unsigned long ulMsgSize)
@@ -381,6 +355,12 @@ static int SMTPLogSession(SMTPSessionBean &SMTPS, char const *pszSender,
 
 	RLckUnlockEX(hResLock);
 
+	return 0;
+}
+
+static int SMTPCheckMapsList(SYS_INET_ADDR const& PeerInfo, const std::string& pszMapList,
+	const std::string& pszMapName, int iMaxMapName, int& iMapCode)
+{
 	return 0;
 }
 
@@ -423,19 +403,22 @@ static int SMTPCheckMapsList(SYS_INET_ADDR const &PeerInfo, char const *pszMapLi
 	return 0;
 }
 
-static int SMTPDoIPBasedInit(SMTPSessionBean &SMTPS, char *&pszSMTPError)
+static int SMTPDoIPBasedInit(SMTPSessionBean &SMTPS, std::string& pszSMTPError)
 {
 	int iErrorCode;
 
 	/* Check using the "smtp.ipmap.tab" file */
 	if ((iErrorCode = SMTPCheckPeerIP(SMTPS.PeerInfo)) < 0) {
-		int iMapCode = SvrGetConfigInt("SMTP-IpMapDropCode", 1, SMTPS.hSvrConfig);
+		int iMapCode = SmtpConfig::GetSmtpIpMapDropCode();
+		//SvrGetConfigInt("SMTP-IpMapDropCode", 1, SMTPS.hSvrConfig);
 
 		if (iMapCode > 0) {
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
+			{
 				SMTPLogSession(SMTPS, "", "", "SNDRIP=EIPBAN", 0);
+			}
 
-			pszSMTPError = SvrGetConfigVar(SMTPS.hSvrConfig, "SmtpMsgIPBan");
+			pszSMTPError = SmtpConfig::GetSmtpMsgIPBan();
 
 			ErrSetErrorCode(iErrorCode);
 			return iErrorCode;
@@ -461,10 +444,12 @@ static int SMTPDoIPBasedInit(SMTPSessionBean &SMTPS, char *&pszSMTPError)
 		}
 
 		if (iMapCode > 0) {
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
+			{
 				SMTPLogSession(SMTPS, "", "", "SNDRIP=EIPSPAM", 0);
+			}
 
-			pszSMTPError = SvrGetConfigVar(SMTPS.hSvrConfig, "SmtpMsgIPBanSpammers");
+			pszSMTPError = SmtpConfig::GetSmtpMsgIPBanSpammers();
 
 			ErrSetErrorCode(iErrorCode);
 			return iErrorCode;
@@ -475,46 +460,40 @@ static int SMTPDoIPBasedInit(SMTPSessionBean &SMTPS, char *&pszSMTPError)
 	}
 
 	/* Custom maps checking */
-	char *pszMapsList = SvrGetConfigVar(SMTPS.hSvrConfig, "CustMapsList");
-
-	if (pszMapsList != NULL) {
+	//char *pszMapsList = SvrGetConfigVar(SMTPS.hSvrConfig, "CustMapsList");
+	std::string strMapList = SmtpConfig::GetSmtpCustMapsList();
+	if (!strMapList.empty()) {
 		int iMapCode = 0;
 		char *pszCfgError = NULL;
 
-		if (SMTPCheckMapsList(SMTPS.PeerInfo, pszMapsList, SMTPS.szRejMapName,
-				      sizeof(SMTPS.szRejMapName) - 1, iMapCode) < 0) {
+		if (SMTPCheckMapsList(SMTPS.PeerInfo, strMapList, SMTPS.szRejMapName,
+			sizeof(SMTPS.szRejMapName) - 1, iMapCode) < 0) {
 			if (iMapCode == 1) {
 				ErrorPush();
 
-				if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg)) {
-					char *pszError =
-						StrSprint("SNDRIP=EIPMAP (%s)", SMTPS.szRejMapName);
-
-					SMTPLogSession(SMTPS, "", "",
-						       (pszError !=
-							NULL) ? pszError : "SNDRIP=EIPMAP", 0);
-				SysUtil::SysFree(pszError);
+				if (SmtpConfig::EnableLog()) {
+					std::string strErr = fmt::format("SNDRIP=EIPMAP ({})", SMTPS.szRejMapName);
+					SMTPLogSession(SMTPS, "", "", !strErr.empty() ? strErr : "SNDRIP=EIPMAP", 0);
 				}
 				if ((pszCfgError =
-				     SvrGetConfigVar(SMTPS.hSvrConfig,
-						     "SmtpMsgIPBanMaps")) != NULL) {
-					pszSMTPError =
-						StrSprint("%s (%s)", pszCfgError, SMTPS.szRejMapName);
-				SysUtil::SysFree(pszCfgError);
-				} else
-					pszSMTPError =
-						StrSprint
-						("550 Denied due inclusion of your IP inside (%s)",
-						 SMTPS.szRejMapName);
-			SysUtil::SysFree(pszMapsList);
+					SvrGetConfigVar(SMTPS.hSvrConfig,
+						"SmtpMsgIPBanMaps")) != NULL) {
+					pszSMTPError = fmt::format("{} ({})", pszCfgError, SMTPS.szRejMapName);
+				}
+				else {
+					pszSMTPError = fmt::format("550 Denied due inclusion of your IP inside ({})", SMTPS.szRejMapName);
+				}
 				return ErrorPop();
 			}
 			if (iMapCode == 0)
+			{
 				SMTPS.ulFlags |= SMTPF_MAPPED_IP;
+			}
 			else
+			{
 				SMTPS.iCmdDelay = Max(SMTPS.iCmdDelay, Abs(iMapCode));
+			}
 		}
-	SysUtil::SysFree(pszMapsList);
 	}
 	/* RDNS client check */
 	int iCheckValue = SvrGetConfigInt("SMTP-RDNSCheck", 0, SMTPS.hSvrConfig);
@@ -590,7 +569,7 @@ static int SMTPApplyPerms(SMTPSessionBean &SMTPS, char const *pszPerms)
 }
 
 static int SMTPInitSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock,
-			   SMTPSessionBean &SMTPS, char *&pszSMTPError)
+			   SMTPSessionBean &SMTPS,std::string& pszSMTPError)
 {
 	ZeroData(SMTPS);
 	SMTPS.iSMTPState = stateInit;
@@ -796,7 +775,7 @@ static int SMTPApplyUserConfig(SMTPSessionBean& SMTPS, const UserInfoBean& userI
 static int SMTPApplyUserConfig(SMTPSessionBean &SMTPS, UserInfo *pUI)
 {
 	/* Retrieve and apply permissions */
-	char *pszValue = NULL;
+	
 	char szPerms[128] = "";
 
 	if (SMTPGetUserSmtpPerms(pUI, SMTPS.hSvrConfig, szPerms, sizeof(szPerms) - 1) < 0)
@@ -805,20 +784,17 @@ static int SMTPApplyUserConfig(SMTPSessionBean &SMTPS, UserInfo *pUI)
 	SMTPApplyPerms(SMTPS, szPerms);
 
 	/* Check "MaxMessageSize" override */
-	if ((pszValue = UsrGetUserInfoVar(pUI, "MaxMessageSize")) != NULL) {
-		SMTPS.ulMaxMsgSize = 1024 * (unsigned long) atol(pszValue);
-
-	SysUtil::SysFree(pszValue);
-	}
+	
+	SMTPS.ulMaxMsgSize = 1024 * SmtpConfig::GetSmtpMaxMessageSize();
 	/* Check if the emission of "X-Auth-User:" is diabled */
-	if ((pszValue = UsrGetUserInfoVar(pUI, "DisableEmitAuthUser")) != NULL) {
-		if (atoi(pszValue))
-			SMTPS.ulFlags |= SMTPF_NOEMIT_AUTH;
-		else
-			SMTPS.ulFlags &= ~SMTPF_NOEMIT_AUTH;
-	SysUtil::SysFree(pszValue);
+	if (SmtpConfig::DisableEmitAuthUser())
+	{
+		SMTPS.ulFlags |= SMTPF_NOEMIT_AUTH;
 	}
-
+	else
+	{
+		SMTPS.ulFlags &= ~SMTPF_NOEMIT_AUTH;
+	}
 	return 0;
 }
 
@@ -857,7 +833,7 @@ SysUtil::SysFree(pszBuffer);
 	if (SMTPS.iErrorsMax > 0 && SMTPS.iErrorsCount >= SMTPS.iErrorsMax) {
 		char szIP[128] = "";
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom != NULL ? SMTPS.pszFrom : "",
 			//	"", "SMTP=EERRS", 0);
@@ -918,7 +894,7 @@ static int SMTPCheckMailParams(char const *pszCommand, char **ppszRetDomains,
 
 			if (isdigit(*pszSize) &&
 			    SMTPS.ulMaxMsgSize < (unsigned long) atol(pszSize)) {
-				if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+				if (SmtpConfig::EnableLog())
 					SMTPLogSession(SMTPS,
 						       (ppszRetDomains[0] !=
 							NULL) ? ppszRetDomains[0] : "", "",
@@ -946,7 +922,7 @@ static int SMTPCheckReturnPath(char const *pszCommand, char **ppszRetDomains,
 
 	if ((iDomainCount = StrStringsCount(ppszRetDomains)) == 0) {
 		if (!SvrTestConfigFlag("AllowNullSender", true, SMTPS.hSvrConfig)) {
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 				SMTPLogSession(SMTPS, "", "", "SNDR=EEMPTY", 0);
 
 			pszSMTPError = SysStrDup("501 Syntax error in return path");
@@ -960,7 +936,7 @@ static int SMTPCheckReturnPath(char const *pszCommand, char **ppszRetDomains,
 	if (USmtpSplitEmailAddr(ppszRetDomains[0], szMailerUser, szMailerDomain) < 0) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			SMTPLogSession(SMTPS, ppszRetDomains[0], "", "SNDR=ESYNTAX", 0);
 
 		pszSMTPError = SysStrDup("501 Syntax error in return path");
@@ -973,7 +949,7 @@ static int SMTPCheckReturnPath(char const *pszCommand, char **ppszRetDomains,
 	    USmtpCheckMailDomain(SMTPS.hSvrConfig, szMailerDomain) < 0) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			SMTPLogSession(SMTPS, ppszRetDomains[0], "", "SNDR=ENODNS", 0);
 
 		pszSMTPError = SysStrDup("505 Your domain has no DNS/MX entries");
@@ -984,7 +960,7 @@ static int SMTPCheckReturnPath(char const *pszCommand, char **ppszRetDomains,
 	if (USmtpSpamAddressCheck(ppszRetDomains[0]) < 0) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			SMTPLogSession(SMTPS, ppszRetDomains[0], "", "SNDR=ESPAM", 0);
 
 		if ((pszSMTPError =
@@ -1062,7 +1038,7 @@ static int SMTPHandleCmd_MAIL(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 
 	/* If the incoming IP is "mapped" stop here */
 	if (SMTPS.ulFlags & (SMTPF_MAPPED_IP | SMTPF_NORDNS_IP | SMTPF_BLOCKED_IP)) {
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg)) {
+		if (SmtpConfig::EnableLog()) {
 			if (SMTPS.ulFlags & SMTPF_MAPPED_IP) {
 				//char *pszError =
 				//	StrSprint("SNDRIP=EIPMAP (%s)", SMTPS.szRejMapName);
@@ -1397,7 +1373,7 @@ static int SMTPRunFilters(SMTPSessionBean &SMTPS, char const *pszFilterPath, cha
 				SysSNPrintf(szLogLine, sizeof(szLogLine) - 1,
 					    "%s=EFILTER", SMTPGetFilterExtname(pszType));
 
-				if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+				if (SmtpConfig::EnableLog())
 				{
 					//SMTPLogSession(SMTPS, SMTPS.pszFrom, SMTPS.pszRcpt,
 					//	szLogLine, 0);
@@ -1470,7 +1446,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 	char szRealUser[MAX_ADDR_NAME] = "";
 
 	if ((iDomainCount = StrStringsCount(ppszFwdDomains)) == 0) {
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, "", "RCPT=ESYNTAX", 0);
 		}
@@ -1484,7 +1460,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 				szDestDomain) < 0) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0], "RCPT=ESYNTAX",
 			//	0);
@@ -1517,7 +1493,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 				if (!UsrGetUserInfoVarInt(pUI, "ReceiveEnable", 1)) {
 					UsrFreeUserInfo(pUI);
 
-					if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+					if (SmtpConfig::EnableLog())
 					{
 						//SMTPLogSession(SMTPS, SMTPS.pszFrom,
 						//	ppszFwdDomains[0], "RCPT=EDSBL",
@@ -1539,7 +1515,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 						ErrorPush();
 						UsrFreeUserInfo(pUI);
 
-						if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+						if (SmtpConfig::EnableLog())
 						{
 							//SMTPLogSession(SMTPS, SMTPS.pszFrom,
 							//	ppszFwdDomains[0],
@@ -1562,7 +1538,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 						ErrorPush();
 						UsrFreeUserInfo(pUI);
 
-						if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+						if (SmtpConfig::EnableLog())
 						{
 							//SMTPLogSession(SMTPS, SMTPS.pszFrom,
 							//	ppszFwdDomains[0],
@@ -1583,7 +1559,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 				/* Recipient domain is local but no account is found inside the standard */
 				/* users/aliases database and the account is not handled with cmdaliases. */
 				/* It's pretty much time to report a recipient error */
-				if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+				if (SmtpConfig::EnableLog())
 				{
 					//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0],
 					//	"RCPT=EAVAIL", 0);
@@ -1600,7 +1576,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 			if (SMTPCheckRelayCapability(SMTPS, szDestDomain) < 0) {
 				ErrorPush();
 
-				if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+				if (SmtpConfig::EnableLog())
 				{
 					//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0],
 					//	"RCPT=ERELAY", 0);
@@ -1616,7 +1592,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 		if (SMTPCheckRelayCapability(SMTPS, szDestDomain) < 0) {
 			ErrorPush();
 
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 			{
 				//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0],
 				//	"RCPT=ERELAY", 0);
@@ -1632,7 +1608,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 	if (USmtpSplitEmailAddr(ppszFwdDomains[0], NULL, SMTPS.szDestDomain) < 0) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0], "RCPT=ESYNTAX",
 			//	0);
@@ -1651,7 +1627,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 	if (SMTPS.m_strSendRcpt.empty()) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, ppszFwdDomains[0], "RCPT=ESYNTAX",
 			//	0);
@@ -1720,7 +1696,7 @@ static int SMTPHandleCmd_RCPT(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	}
 	/* Check recipients count */
 	if (SMTPS.iRcptCount >= SMTPS.pSMTPCfg->iMaxRcpts) {
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, "", "RCPT=ENBR", 0);
 		}
@@ -1735,7 +1711,7 @@ static int SMTPHandleCmd_RCPT(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	if (ppszFwdDomains == NULL) {
 		ErrorPush();
 
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 		{
 			//SMTPLogSession(SMTPS, SMTPS.pszFrom, "", "RCPT=ESYNTAX", 0);
 		}
@@ -1760,7 +1736,7 @@ static int SMTPHandleCmd_RCPT(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	StrFreeStrings(ppszFwdDomains);
 
 	/* Log SMTP session */
-	if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+	if (SmtpConfig::EnableLog())
 		//SMTPLogSession(SMTPS, SMTPS.pszFrom, SMTPS.pszRcpt, "RCPT=OK", 0);
 
 	/* Write RCPT TO ( 5th[,...] row(s) of the smtp-mail file ) */
@@ -1986,6 +1962,7 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 {
 	char *pszError;
 
+	//session State not right,reset session
 	if (SMTPS.iSMTPState != stateRcpt) {
 		SMTPResetSession(SMTPS);
 
@@ -2107,7 +2084,7 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 				      ErrGetErrorCode());
 		} else {
 			/* Log the message receive */
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 			{
 				////SMTPLogSession(SMTPS, SMTPS.pszFrom, SMTPS.pszRcpt, "RECV=OK",
 				//	ulMessageSize);
@@ -2436,7 +2413,7 @@ static int SMTPHandleCmd_STARTTLS(char const *pszCommand, BSOCK_HANDLE hBSock, S
 		char szIP[128] = "";
 
 		ErrorPush();
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			//SMTPLogSession(SMTPS, "", "", "SMTP=ESSL", 0);
 		SysLogMessage(LOG_LEV_MESSAGE, "SMTP failed to STARTTLS (%d) [%s]\n",
 			      iError, SysInetNToA(SMTPS.PeerInfo, szIP, sizeof(szIP)));
@@ -3052,7 +3029,7 @@ static int SMTPHandleCmd_AUTH(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 		if (SMTPDoAuthPlain(hBSock, SMTPS, szAuthParam) < 0) {
 			ErrorPush();
 
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 			{
 				//SMTPLogSession(SMTPS, "", "", "AUTH=EFAIL:TYPE=PLAIN", 0);
 			}
@@ -3063,7 +3040,7 @@ static int SMTPHandleCmd_AUTH(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 		if (SMTPDoAuthLogin(hBSock, SMTPS, szAuthParam) < 0) {
 			ErrorPush();
 
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 			{
 				//SMTPLogSession(SMTPS, "", "", "AUTH=EFAIL:TYPE=LOGIN", 0);
 			}
@@ -3074,7 +3051,7 @@ static int SMTPHandleCmd_AUTH(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 		if (SMTPDoAuthCramMD5(hBSock, SMTPS, szAuthParam) < 0) {
 			ErrorPush();
 
-			if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+			if (SmtpConfig::EnableLog())
 			{
 				SMTPLogSession(SMTPS, "", "", "AUTH=EFAIL:TYPE=CRAM-MD5", 0);
 			}
@@ -3137,7 +3114,7 @@ static int SMTPHandleCmd_VRFY(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	/* Check if VRFY is enabled */
 	if ((SMTPS.ulFlags & SMTPF_VRFY_ENABLED) == 0 &&
 	    !SvrTestConfigFlag("AllowSmtpVRFY", false, SMTPS.hSvrConfig)) {
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			SMTPLogSession(SMTPS, "", "", "VRFY=EACCESS", 0);
 
 		SMTPSendError(hBSock, SMTPS, "252 Argument not checked");
@@ -3197,7 +3174,7 @@ static int SMTPHandleCmd_ETRN(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 	/* Check if ETRN is enabled */
 	if ((SMTPS.ulFlags & SMTPF_ETRN_ENABLED) == 0 &&
 	    !SvrTestConfigFlag("AllowSmtpETRN", false, SMTPS.hSvrConfig)) {
-		if (SMTPLogEnabled(SMTPS.pThCfg->hThShb, SMTPS.pSMTPCfg))
+		if (SmtpConfig::EnableLog())
 			SMTPLogSession(SMTPS, "", "", "ETRN=EACCESS", 0);
 
 		SMTPSendError(hBSock, SMTPS, "501 Command not accepted");
@@ -3275,15 +3252,13 @@ static int SMTPHandleCommand(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPSe
 static int SMTPHandleSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock)
 {
 	/* Session structure declaration and init */
-	char *pszSMTPError = NULL;
+	std::string pszSMTPError;
 	SMTPSessionBean SMTPS;
 
 	if (SMTPInitSession(pThCfg, hBSock, SMTPS, pszSMTPError) < 0) {
 		ErrorPush();
-		if (pszSMTPError != NULL) {
-			BSckSendString(hBSock, pszSMTPError, STD_SMTP_TIMEOUT);
-
-		SysUtil::SysFree(pszSMTPError);
+		if (pszSMTPError.empty()) {
+			BSckSendString(hBSock, pszSMTPError.c_str(), STD_SMTP_TIMEOUT);
 		} else
 			BSckVSendString(hBSock, STD_SMTP_TIMEOUT,
 					"421 %s service not available (%d), closing transmission channel",
