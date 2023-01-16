@@ -287,7 +287,7 @@ int GwLkAddLink(POP3Link *pPopLnk)
 static int GwLkGetDisableFilePath(POP3Link const *pPopLnk, char *pszEnableFile)
 {
 	if (GwLkLocalDomain(pPopLnk)) {
-		UserInfo *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
+	UserInfoBean *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
 
 		if (pUI == NULL)
 			return ErrGetErrorCode();
@@ -296,10 +296,10 @@ static int GwLkGetDisableFilePath(POP3Link const *pPopLnk, char *pszEnableFile)
 
 		if (UsrGetUserPath(pUI, szUserPath, sizeof(szUserPath), 1) == NULL) {
 			ErrorPush();
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 			return ErrorPop();
 		}
-		UsrFreeUserInfo(pUI);
+		//UsrFreeUserInfo(pUI);
 		SysSNPrintf(pszEnableFile, SYS_MAX_PATH - 1, "%s%s@%s.disabled", szUserPath,
 			    pPopLnk->pszRmtName, pPopLnk->pszRmtDomain);
 	} else {

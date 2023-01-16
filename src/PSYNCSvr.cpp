@@ -225,7 +225,7 @@ SysUtil::SysFree(pSTD);
 
 	if (GwLkLocalDomain(pPopLnk)) {
 		/* Verify user credentials */
-		UserInfo *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
+	UserInfoBean *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
 
 		if (pUI != NULL) {
 			SysLogMessage(LOG_LEV_MESSAGE,
@@ -252,7 +252,7 @@ SysUtil::SysFree(pSTD);
 				if (PSYNCLogEnabled(pPSYNCCfg))
 					PSYNCLogSession(pPopLnk, &SRep, "SYNC=OK");
 			}
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 		} else {
 			SysLogMessage(LOG_LEV_MESSAGE,
 				      "[PSYNC] User = \"%s\" - Domain = \"%s\" Failed !\n"

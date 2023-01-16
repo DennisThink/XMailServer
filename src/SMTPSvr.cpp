@@ -745,7 +745,7 @@ static void SMTPFullResetSession(SMTPSessionBean &SMTPS)
 	SMTPResetSession(SMTPS);
 }
 
-static int SMTPGetUserSmtpPerms(UserInfo *pUI, SVRCFG_HANDLE hSvrConfig, char *pszPerms,
+static int SMTPGetUserSmtpPerms(UserInfoBean *pUI, SVRCFG_HANDLE hSvrConfig, char *pszPerms,
 				int iMaxPerms)
 {
 	char *pszUserPerms = UsrGetUserInfoVar(pUI, "SmtpPerms");
@@ -772,7 +772,7 @@ static int SMTPApplyUserConfig(SMTPSessionBean& SMTPS, const UserInfoBean& userI
 {
 	return 0;
 }
-static int SMTPApplyUserConfig(SMTPSessionBean &SMTPS, UserInfo *pUI)
+static int SMTPApplyUserConfig(SMTPSessionBean &SMTPS, UserInfoBean *pUI)
 {
 	/* Retrieve and apply permissions */
 	
@@ -851,7 +851,7 @@ SysUtil::SysFree(pszBuffer);
 static int SMTPTryPopAuthIpCheck(SMTPSessionBean &SMTPS, char const *pszUser, char const *pszDomain)
 {
 	/* Load user info */
-	UserInfo *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser);
+UserInfoBean *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser);
 
 	if (pUI == NULL)
 		return ErrGetErrorCode();
@@ -859,20 +859,20 @@ static int SMTPTryPopAuthIpCheck(SMTPSessionBean &SMTPS, char const *pszUser, ch
 	/* Perform IP file checking */
 	if (UPopUserIpCheck(pUI, &SMTPS.PeerInfo, SMTPS.pSMTPCfg->uPopAuthExpireTime) < 0) {
 		ErrorPush();
-		UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		return ErrorPop();
 	}
 	/* Apply user configuration */
 	if (SMTPApplyUserConfig(SMTPS, pUI) < 0) {
 		ErrorPush();
-		UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		return ErrorPop();
 	}
 	/* If the user did not authenticate, set the logon user token */
 	if (IsEmptyString(SMTPS.szLogonUser))
 		UsrGetAddress(pUI, SMTPS.szLogonUser);
 
-	UsrFreeUserInfo(pUI);
+	////UsrFreeUserInfo(pUI);
 
 	return 0;
 }
@@ -1486,12 +1486,12 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 
 		} else if (MDomIsHandledDomain(szDestDomain) == 0) {
 			/* Check user existance */
-			UserInfo *pUI = UsrGetUserByNameOrAlias(szDestDomain, szDestUser);
+		UserInfoBean *pUI = UsrGetUserByNameOrAlias(szDestDomain, szDestUser);
 
 			if (pUI != NULL) {
 				/* Check if the account is enabled for receiving */
 				if (!UsrGetUserInfoVarInt(pUI, "ReceiveEnable", 1)) {
-					UsrFreeUserInfo(pUI);
+					////UsrFreeUserInfo(pUI);
 
 					if (SmtpConfig::EnableLog())
 					{
@@ -1513,7 +1513,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 					/* Check user mailbox size */
 					if (UPopCheckMailboxSize(pUI) < 0) {
 						ErrorPush();
-						UsrFreeUserInfo(pUI);
+						////UsrFreeUserInfo(pUI);
 
 						if (SmtpConfig::EnableLog())
 						{
@@ -1536,7 +1536,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 									     szLogonUser) ? NULL :
 							       SMTPS.szLogonUser) < 0) {
 						ErrorPush();
-						UsrFreeUserInfo(pUI);
+						////UsrFreeUserInfo(pUI);
 
 						if (SmtpConfig::EnableLog())
 						{
@@ -1554,7 +1554,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 				/* Extract the real user address */
 				UsrGetAddress(pUI, szRealUser);
 
-				UsrFreeUserInfo(pUI);
+				////UsrFreeUserInfo(pUI);
 			} else {
 				/* Recipient domain is local but no account is found inside the standard */
 				/* users/aliases database and the account is not handled with cmdaliases. */
@@ -2617,16 +2617,16 @@ static int SMTPTryApplyLocalAuth(SMTPSessionBean &SMTPS, char const *pszUsername
 			if (SMTPApplyUserConfig(SMTPS, userInfo) < 0)
 			{
 				//ErrorPush();
-				//UsrFreeUserInfo(pUI);
+				//////UsrFreeUserInfo(pUI);
 				//return ErrorPop();
 				return ERR_SMTP_AUTH_FAILED;
 			}
-			//UsrFreeUserInfo(pUI);
+			//////UsrFreeUserInfo(pUI);
 
 			return 0;
 		}
 		XMAIL_ERROR("503 SMTPTryApplyLocalAuth:{} {}",pszUsername,userInfo.m_strPassword);
-		//UsrFreeUserInfo(pUI);
+		//////UsrFreeUserInfo(pUI);
 	}
 	else
 	{
@@ -2834,29 +2834,29 @@ static int SMTPTryApplyLocalCMD5Auth(SMTPSessionBean &SMTPS, char const *pszChal
 			   szAccountDomain, sizeof(szAccountDomain)) < 0)
 		return ErrGetErrorCode();
 
-	UserInfo *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
+UserInfoBean *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
 
 	if (pUI != NULL) {
 		/* Compute MD5 response ( secret , challenge , digest ) */
 		char szCurrDigest[512] = "";
 
-		if (MscCramMD5(pUI->pszPassword, pszChallenge, szCurrDigest) < 0) {
-			UsrFreeUserInfo(pUI);
+		/*if (MscCramMD5(pUI->pszPassword, pszChallenge, szCurrDigest) < 0) {
+			////UsrFreeUserInfo(pUI);
 
 			return ErrGetErrorCode();
-		}
+		}*/
 		if (stricmp(szCurrDigest, pszDigest) == 0) {
 			/* Apply user configuration */
 			if (SMTPApplyUserConfig(SMTPS, pUI) < 0) {
 				ErrorPush();
-				UsrFreeUserInfo(pUI);
+				////UsrFreeUserInfo(pUI);
 				return ErrorPop();
 			}
-			UsrFreeUserInfo(pUI);
+			////UsrFreeUserInfo(pUI);
 
 			return 0;
 		}
-		UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 	}
 
 	ErrSetErrorCode(ERR_SMTP_AUTH_FAILED);
@@ -3144,16 +3144,16 @@ static int SMTPHandleCmd_VRFY(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 
 	StrFreeStrings(ppszTokens);
 
-	UserInfo *pUI = UsrGetUserByNameOrAlias(szVrfyDomain, szVrfyUser);
+UserInfoBean *pUI = UsrGetUserByNameOrAlias(szVrfyDomain, szVrfyUser);
 
 	if (pUI != NULL) {
 		char *pszRealName = UsrGetUserInfoVar(pUI, "RealName", "Unknown");
 
-		BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout,
-				"250 %s <%s@%s>", pszRealName, pUI->pszName, pUI->pszDomain);
+		/*BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout,
+				"250 %s <%s@%s>", pszRealName, pUI->pszName, pUI->pszDomain);*/
 
 	SysUtil::SysFree(pszRealName);
-		UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 	} else {
 		if (USmlIsCmdAliasAccount(szVrfyDomain, szVrfyUser) < 0) {
 			SMTPSendError(hBSock, SMTPS, "550 String does not match anything");

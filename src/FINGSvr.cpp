@@ -133,32 +133,32 @@ static int FINGLogSession(char const *pszSockHost, char const *pszSockDomain,
 	return 0;
 }
 
-static int FINGDumpMailingList(UserInfo * pUI, BSOCK_HANDLE hBSock, FINGConfig * pFINGCfg)
+static int FINGDumpMailingList(UserInfoBean * pUI, BSOCK_HANDLE hBSock, FINGConfig * pFINGCfg)
 {
-	USRML_HANDLE hUsersDB = UsrMLOpenDB(pUI);
+	//USRML_HANDLE hUsersDB = UsrMLOpenDB(pUI);
 
-	if (hUsersDB == INVALID_USRML_HANDLE)
-		return ErrGetErrorCode();
+	//if (hUsersDB == INVALID_USRML_HANDLE)
+	//	return ErrGetErrorCode();
 
-	/* Mailing list scan */
-	MLUserInfo *pMLUI = UsrMLGetFirstUser(hUsersDB);
+	///* Mailing list scan */
+	//MLUserInfo *pMLUI = UsrMLGetFirstUser(hUsersDB);
 
-	for (; pMLUI != NULL; pMLUI = UsrMLGetNextUser(hUsersDB)) {
-		char szUser[MAX_ADDR_NAME] = "";
-		char szDomain[MAX_ADDR_NAME] = "";
+	//for (; pMLUI != NULL; pMLUI = UsrMLGetNextUser(hUsersDB)) {
+	//	char szUser[MAX_ADDR_NAME] = "";
+	//	char szDomain[MAX_ADDR_NAME] = "";
 
-		if (USmtpSplitEmailAddr(pMLUI->pszAddress, szUser, szDomain) < 0) {
-			ErrorPush();
-			UsrMLFreeUser(pMLUI);
-			UsrMLCloseDB(hUsersDB);
-			return ErrorPop();
-		}
-		/* Dump user */
-		FINGDumpUser(szUser, szDomain, hBSock, pFINGCfg);
+	//	if (USmtpSplitEmailAddr(pMLUI->pszAddress, szUser, szDomain) < 0) {
+	//		ErrorPush();
+	//		UsrMLFreeUser(pMLUI);
+	//		UsrMLCloseDB(hUsersDB);
+	//		return ErrorPop();
+	//	}
+	//	/* Dump user */
+	//	FINGDumpUser(szUser, szDomain, hBSock, pFINGCfg);
 
-		UsrMLFreeUser(pMLUI);
-	}
-	UsrMLCloseDB(hUsersDB);
+	//	UsrMLFreeUser(pMLUI);
+	//}
+	//UsrMLCloseDB(hUsersDB);
 
 	return 0;
 }
@@ -168,7 +168,7 @@ static int FINGDumpUser(char const *pszUser, char const *pszDomain,
 {
 	/* Lookup user */
 	char szRealAddr[MAX_ADDR_NAME] = "";
-	UserInfo *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser, szRealAddr);
+UserInfoBean *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser, szRealAddr);
 
 	if (pUI != NULL) {
 		if (UsrGetUserType(pUI) == usrTypeUser) {
@@ -192,9 +192,9 @@ static int FINGDumpUser(char const *pszUser, char const *pszDomain,
 		} else {
 			/* Local mailing list case */
 
-			FINGDumpMailingList(pUI, hBSock, pFINGCfg);
+			//FINGDumpMailingList(pUI, hBSock, pFINGCfg);
 		}
-		UsrFreeUserInfo(pUI);
+		//UsrFreeUserInfo(pUI);
 	} else {
 		ErrSetErrorCode(ERR_USER_NOT_FOUND);
 		return ERR_USER_NOT_FOUND;

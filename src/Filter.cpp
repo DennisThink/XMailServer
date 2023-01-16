@@ -153,7 +153,7 @@ static int FilLogExec(FilterMsgInfo const &FMI, char const * const *ppszExec,
 
 static int FilLoadMsgInfo(SPLF_HANDLE hFSpool, FilterMsgInfo & FMI)
 {
-	UserInfo *pUI;
+UserInfoBean *pUI;
 	char const *const *ppszInfo = USmlGetInfo(hFSpool);
 	char const *const *ppszFrom = USmlGetMailFrom(hFSpool);
 	char const *const *ppszRcpt = USmlGetRcptTo(hFSpool);
@@ -169,7 +169,7 @@ static int FilLoadMsgInfo(SPLF_HANDLE hFSpool, FilterMsgInfo & FMI)
 		if ((pUI = UsrGetUserByNameOrAlias(szDomain, szUser)) != NULL) {
 			UsrGetAddress(pUI, FMI.szSender);
 
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 		} else
 			StrSNCpy(FMI.szSender, ppszFrom[iFromDomains - 1]);
 	} else
@@ -180,7 +180,7 @@ static int FilLoadMsgInfo(SPLF_HANDLE hFSpool, FilterMsgInfo & FMI)
 		if ((pUI = UsrGetUserByNameOrAlias(szDomain, szUser)) != NULL) {
 			UsrGetAddress(pUI, FMI.szRecipient);
 
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 		} else
 			StrSNCpy(FMI.szRecipient, ppszRcpt[iRcptDomains - 1]);
 	} else

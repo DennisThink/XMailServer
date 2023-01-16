@@ -156,7 +156,7 @@ SysUtil::SysFree(pszText);
 	return iNotifyResult;
 }
 
-static int SMAILMailingListExplode(UserInfo *pUI, SPLF_HANDLE hFSpool)
+static int SMAILMailingListExplode(UserInfoBean *pUI, SPLF_HANDLE hFSpool)
 {
 	char const *const *ppszFrom = USmlGetMailFrom(hFSpool);
 	char const *const *ppszRcpt = USmlGetRcptTo(hFSpool);
@@ -1328,7 +1328,7 @@ static int SMAILProcessFile(SVRCFG_HANDLE hSvrConfig, SHB_HANDLE hShbSMAIL,
 					      pszRealDomain, szDestUser, szAliasFilePath) < 0)
 			return ErrGetErrorCode();
 	} else if (MDomIsHandledDomain(szDestDomain) == 0) {
-		UserInfo *pUI = UsrGetUserByNameOrAlias(szDestDomain, szDestUser);
+	UserInfoBean *pUI = UsrGetUserByNameOrAlias(szDestDomain, szDestUser);
 
 		if (pUI != NULL) {
 			SysLogMessage(LOG_LEV_MESSAGE,
@@ -1346,7 +1346,7 @@ static int SMAILProcessFile(SVRCFG_HANDLE hSvrConfig, SHB_HANDLE hShbSMAIL,
 				if (USmlProcessLocalUserMessage(hSvrConfig, pUI, hFSpool, hQueue,
 								hMessage, LMPC) < 0) {
 					ErrorPush();
-					UsrFreeUserInfo(pUI);
+					//UsrFreeUserInfo(pUI);
 					return ErrorPop();
 				}
 			} else {
@@ -1354,17 +1354,17 @@ static int SMAILProcessFile(SVRCFG_HANDLE hSvrConfig, SHB_HANDLE hShbSMAIL,
 				if (FilFilterMessage(hFSpool, hQueue, hMessage,
 						     FILTER_MODE_INBOUND) < 0) {
 					ErrorPush();
-					UsrFreeUserInfo(pUI);
+					//UsrFreeUserInfo(pUI);
 					return ErrorPop();
 				}
 				/* Local mailing list case */
 				if (SMAILMailingListExplode(pUI, hFSpool) < 0) {
 					ErrorPush();
-					UsrFreeUserInfo(pUI);
+					//UsrFreeUserInfo(pUI);
 					return ErrorPop();
 				}
 			}
-			UsrFreeUserInfo(pUI);
+			//UsrFreeUserInfo(pUI);
 		} else {
 			ErrorPush();
 			/* No account inside the handled domain */

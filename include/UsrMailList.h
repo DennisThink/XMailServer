@@ -37,11 +37,11 @@ typedef struct USRML_HANDLE_struct {
 
 MLUserInfo *UsrMLAllocDefault(char const *pszAddress, char const *pszPerms);
 int UsrMLFreeUser(MLUserInfo * pMLUI);
-int UsrMLCheckUserPost(UserInfo * pUI, char const *pszUser, char const *pszLogonUser);
-int UsrMLAddUser(UserInfo * pUI, MLUserInfo const *pMLUI);
-int UsrMLRemoveUser(UserInfo * pUI, const char *pszMLUser);
-int UsrMLGetUsersFileSnapShot(UserInfo * pUI, const char *pszFileName);
-USRML_HANDLE UsrMLOpenDB(UserInfo * pUI);
+int UsrMLCheckUserPost(UserInfoBean * pUI, char const *pszUser, char const *pszLogonUser);
+int UsrMLAddUser(UserInfoBean * pUI, MLUserInfo const *pMLUI);
+int UsrMLRemoveUser(UserInfoBean * pUI, const char *pszMLUser);
+int UsrMLGetUsersFileSnapShot(UserInfoBean * pUI, const char *pszFileName);
+USRML_HANDLE UsrMLOpenDB(UserInfoBean * pUI);
 void UsrMLCloseDB(USRML_HANDLE hUsersDB);
 MLUserInfo *UsrMLGetFirstUser(USRML_HANDLE hUsersDB);
 MLUserInfo *UsrMLGetNextUser(USRML_HANDLE hUsersDB);

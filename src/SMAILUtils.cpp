@@ -88,7 +88,7 @@ struct MessageTagData {
 
 struct MacroSubstCtx {
 	SPLF_HANDLE hFSpool;
-	UserInfo *pUI;
+UserInfoBean *pUI;
 	FileSection FSect;
 };
 
@@ -992,7 +992,7 @@ int USmlMapAddress(char const *pszAddress, char *pszDomain, char *pszName)
 	return 0;
 }
 
-int USmlCreateMBFile(UserInfo *pUI, char const *pszFileName, SPLF_HANDLE hFSpool)
+int USmlCreateMBFile(UserInfoBean *pUI, char const *pszFileName, SPLF_HANDLE hFSpool)
 {
 	char const *const *ppszFrom = USmlGetMailFrom(hFSpool);
 
@@ -1209,7 +1209,7 @@ int USmlCreateSpoolFile(SPLF_HANDLE hFSpool, char const *pszFromUser,
 	return iCreateResult;
 }
 
-static int USmlGetMailProcessFile(UserInfo *pUI, QUEUE_HANDLE hQueue, QMSG_HANDLE hMessage,
+static int USmlGetMailProcessFile(UserInfoBean *pUI, QUEUE_HANDLE hQueue, QMSG_HANDLE hMessage,
 				  char *pszMPFilePath)
 {
 	/* Get the custom spool file associated with this message */
@@ -1227,7 +1227,7 @@ static int USmlGetMailProcessFile(UserInfo *pUI, QUEUE_HANDLE hQueue, QMSG_HANDL
 	return UsrGetMailProcessFile(pUI, pszMPFilePath, GMPROC_USER | GMPROC_DOMAIN);
 }
 
-static int USmlLocalDelivery(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI, SPLF_HANDLE hFSpool,
+static int USmlLocalDelivery(SVRCFG_HANDLE hSvrConfig,UserInfoBean *pUI, SPLF_HANDLE hFSpool,
 			     QUEUE_HANDLE hQueue, QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	/* Apply filters ... */
@@ -1253,8 +1253,8 @@ static int USmlLocalDelivery(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI, SPLF_HANDL
 	/* Create mailbox file ... */
 	char szMBFile[SYS_MAX_PATH] = "";
 
-	if (UsrGetTmpFile(pUI->pszDomain, szMBFile, sizeof(szMBFile)) < 0)
-		return ErrGetErrorCode();
+	//if (UsrGetTmpFile(pUI->pszDomain, szMBFile, sizeof(szMBFile)) < 0)
+	//	return ErrGetErrorCode();
 
 	if (USmlCreateMBFile(pUI, szMBFile, hFSpool) < 0)
 		return ErrGetErrorCode();
@@ -1335,7 +1335,7 @@ static char *USmlMacroLkupProc(void *pPrivate, char const *pszName, int iSize)
 	return SysStrDup("");
 }
 
-static int USmlCmdMacroSubstitutes(char **ppszCmdTokens, UserInfo *pUI, SPLF_HANDLE hFSpool)
+static int USmlCmdMacroSubstitutes(char **ppszCmdTokens,UserInfoBean *pUI, SPLF_HANDLE hFSpool)
 {
 	MacroSubstCtx MSC;
 
@@ -1352,7 +1352,7 @@ static int USmlCmdMacroSubstitutes(char **ppszCmdTokens, UserInfo *pUI, SPLF_HAN
 }
 
 static int USmlCmd_external(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			    UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			   UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			    QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	/* Apply filters ... */
@@ -1393,7 +1393,7 @@ static int USmlCmd_external(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE 
 }
 
 static int USmlCmd_filter(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			  UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			 UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			  QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	if (iNumTokens < 5) {
@@ -1481,7 +1481,7 @@ static int USmlCmd_filter(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hS
 }
 
 static int USmlCmd_mailbox(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			   UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			  UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			   QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	if (iNumTokens != 1) {
@@ -1498,7 +1498,7 @@ static int USmlCmd_mailbox(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE h
 }
 
 static int USmlCmd_redirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			    UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			   UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			    QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	if (iNumTokens < 2) {
@@ -1526,11 +1526,11 @@ static int USmlCmd_redirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE 
 
 		char szAliasAddr[MAX_ADDR_NAME] = "";
 
-		if (strchr(ppszCmdTokens[i], '@') == NULL)
+		/*if (strchr(ppszCmdTokens[i], '@') == NULL)
 			SysSNPrintf(szAliasAddr, sizeof(szAliasAddr) - 1, "%s@%s",
 				    pUI->pszName, ppszCmdTokens[i]);
 		else
-			StrSNCpy(szAliasAddr, ppszCmdTokens[i]);
+			StrSNCpy(szAliasAddr, ppszCmdTokens[i]);*/
 
 		if (USmlCreateSpoolFile(hFSpool, NULL, szAliasAddr, szQueueFilePath,
 					"X-Deliver-To", szUserAddress, NULL) < 0) {
@@ -1555,7 +1555,7 @@ static int USmlCmd_redirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE 
 }
 
 static int USmlCmd_lredirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			     UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			    UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			     QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	if (iNumTokens < 2) {
@@ -1581,11 +1581,11 @@ static int USmlCmd_lredirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE
 
 		char szAliasAddr[MAX_ADDR_NAME] = "";
 
-		if (strchr(ppszCmdTokens[i], '@') == NULL)
-			SysSNPrintf(szAliasAddr, sizeof(szAliasAddr) - 1, "%s@%s",
-				    pUI->pszName, ppszCmdTokens[i]);
-		else
-			StrSNCpy(szAliasAddr, ppszCmdTokens[i]);
+		//if (strchr(ppszCmdTokens[i], '@') == NULL)
+		//	SysSNPrintf(szAliasAddr, sizeof(szAliasAddr) - 1, "%s@%s",
+		//		    pUI->pszName, ppszCmdTokens[i]);
+		//else
+		//	StrSNCpy(szAliasAddr, ppszCmdTokens[i]);
 
 		if (USmlCreateSpoolFile(hFSpool, szUserAddress, szAliasAddr, szQueueFilePath,
 					"X-Deliver-To", szUserAddress, NULL) < 0) {
@@ -1610,7 +1610,7 @@ static int USmlCmd_lredirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE
 }
 
 static int USmlCmd_smtprelay(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE hSvrConfig,
-			     UserInfo *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
+			    UserInfoBean *pUI, SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 			     QMSG_HANDLE hMessage, LocalMailProcConfig &LMPC)
 {
 	/* Apply filters ... */
@@ -1726,7 +1726,7 @@ static int USmlCmd_smtprelay(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE
 	return iReturnCode;
 }
 
-static int USmlProcessCustomMailingFile(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI,
+static int USmlProcessCustomMailingFile(SVRCFG_HANDLE hSvrConfig,UserInfoBean *pUI,
 					SPLF_HANDLE hFSpool, QUEUE_HANDLE hQueue,
 					QMSG_HANDLE hMessage, char const *pszMPFile,
 					LocalMailProcConfig &LMPC)
@@ -1843,7 +1843,7 @@ static int USmlProcessCustomMailingFile(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI,
 	return 0;
 }
 
-int USmlProcessLocalUserMessage(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI, SPLF_HANDLE hFSpool,
+int USmlProcessLocalUserMessage(SVRCFG_HANDLE hSvrConfig,UserInfoBean *pUI, SPLF_HANDLE hFSpool,
 				QUEUE_HANDLE hQueue, QMSG_HANDLE hMessage,
 				LocalMailProcConfig &LMPC)
 {

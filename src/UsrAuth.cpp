@@ -53,7 +53,7 @@ struct UAuthMacroSubstCtx {
 	char const *pszDomain;
 	char const *pszUsername;
 	char const *pszPassword;
-	UserInfo *pUI;
+UserInfoBean *pUI;
 };
 
 
@@ -117,7 +117,7 @@ static char *UAthAuthMacroLkupProc(void *pPrivate, char const *pszName, int iSiz
 }
 
 static int UAthMacroSubstitutes(char **ppszCmdTokens, char const *pszDomain,
-				char const *pszUsername, char const *pszPassword, UserInfo *pUI)
+				char const *pszUsername, char const *pszPassword,UserInfoBean *pUI)
 {
 	UAuthMacroSubstCtx UATH;
 
@@ -132,7 +132,7 @@ static int UAthMacroSubstitutes(char **ppszCmdTokens, char const *pszDomain,
 
 static int UAthExecAuthOp(char const *pszService, char const *pszAuthOp,
 			  char const *pszDomain, char const *pszUsername,
-			  char const *pszPassword, UserInfo *pUI)
+			  char const *pszPassword,UserInfoBean *pUI)
 {
 	return 0;
 	char szAuthConfigPath[SYS_MAX_PATH] = "";
@@ -205,26 +205,30 @@ int UAthAuthenticateUser(char const *pszService, char const *pszDomain,
 			       pszPassword, NULL));
 }
 
-int UAthAddUser(char const *pszService, UserInfo *pUI)
+int UAthAddUser(char const *pszService,UserInfoBean *pUI)
 {
-	return (UAthExecAuthOp(pszService, AUTH_ADD_CONFIG, pUI->pszDomain, pUI->pszName,
-			       pUI->pszPassword, pUI));
+	return 0;
+	/*return (UAthExecAuthOp(pszService, AUTH_ADD_CONFIG, pUI->pszDomain, pUI->pszName,
+			       pUI->pszPassword, pUI));*/
 }
 
-int UAthModifyUser(char const *pszService, UserInfo *pUI)
+int UAthModifyUser(char const *pszService,UserInfoBean *pUI)
 {
-	return (UAthExecAuthOp(pszService, AUTH_MODIFY_CONFIG, pUI->pszDomain, pUI->pszName,
-			       pUI->pszPassword, pUI));
+	return 0;
+	/*return (UAthExecAuthOp(pszService, AUTH_MODIFY_CONFIG, pUI->pszDomain, pUI->pszName,
+			       pUI->pszPassword, pUI));*/
 }
 
-int UAthDelUser(char const *pszService, UserInfo *pUI)
+int UAthDelUser(char const *pszService,UserInfoBean *pUI)
 {
-	return (UAthExecAuthOp(pszService, AUTH_DEL_CONFIG, pUI->pszDomain, pUI->pszName,
-			       pUI->pszPassword, pUI));
+	return 0;
+	/*return (UAthExecAuthOp(pszService, AUTH_DEL_CONFIG, pUI->pszDomain, pUI->pszName,
+			       pUI->pszPassword, pUI));*/
 }
 
 int UAthDropDomain(char const *pszService, char const *pszDomain)
 {
-	return UAthExecAuthOp(pszService, AUTH_DROPDOMAIN_CONFIG, pszDomain, NULL, NULL, NULL);
+	return 0;
+	//return UAthExecAuthOp(pszService, AUTH_DROPDOMAIN_CONFIG, pszDomain, NULL, NULL, NULL);
 }
 

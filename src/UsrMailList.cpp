@@ -110,7 +110,7 @@ SysUtil::SysFree(pMLUI);
 	return 0;
 }
 
-int UsrMLCheckUserPost(UserInfo * pUI, char const *pszUser, char const *pszLogonUser)
+int UsrMLCheckUserPost(UserInfoBean * pUI, char const *pszUser, char const *pszLogonUser)
 {
 	char *pszClosed = UsrGetUserInfoVar(pUI, "ClosedML");
 
@@ -174,7 +174,7 @@ SysUtil::SysFree(pszQuoted);
 	return 0;
 }
 
-int UsrMLAddUser(UserInfo * pUI, MLUserInfo const *pMLUI)
+int UsrMLAddUser(UserInfoBean * pUI, MLUserInfo const *pMLUI)
 {
 	if (UsrGetUserType(pUI) != usrTypeML) {
 		ErrSetErrorCode(ERR_USER_NOT_MAILINGLIST);
@@ -238,7 +238,7 @@ int UsrMLAddUser(UserInfo * pUI, MLUserInfo const *pMLUI)
 	return 0;
 }
 
-int UsrMLRemoveUser(UserInfo * pUI, const char *pszMLUser)
+int UsrMLRemoveUser(UserInfoBean * pUI, const char *pszMLUser)
 {
 	if (UsrGetUserType(pUI) != usrTypeML) {
 		ErrSetErrorCode(ERR_USER_NOT_MAILINGLIST);
@@ -317,7 +317,7 @@ int UsrMLRemoveUser(UserInfo * pUI, const char *pszMLUser)
 	return 0;
 }
 
-int UsrMLGetUsersFileSnapShot(UserInfo * pUI, const char *pszFileName)
+int UsrMLGetUsersFileSnapShot(UserInfoBean * pUI, const char *pszFileName)
 {
 	char szMLTablePath[SYS_MAX_PATH] = "";
 
@@ -340,7 +340,7 @@ int UsrMLGetUsersFileSnapShot(UserInfo * pUI, const char *pszFileName)
 	return 0;
 }
 
-USRML_HANDLE UsrMLOpenDB(UserInfo * pUI)
+USRML_HANDLE UsrMLOpenDB(UserInfoBean * pUI)
 {
 	MLUsersScanData *pMLUSD = (MLUsersScanData *)SysUtil::SysAlloc(sizeof(MLUsersScanData));
 

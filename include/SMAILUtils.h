@@ -83,12 +83,12 @@ int USmlAddTag(SPLF_HANDLE hFSpool, char const *pszTagName,
 	       char const *pszTagData, int iUpdate = 0);
 int USmlSetTagAddress(SPLF_HANDLE hFSpool, char const *pszTagName, char const *pszAddress);
 int USmlMapAddress(char const *pszAddress, char *pszDomain, char *pszName);
-int USmlCreateMBFile(UserInfo *pUI, char const *pszFileName, SPLF_HANDLE hFSpool);
+int USmlCreateMBFile(UserInfoBean *pUI, char const *pszFileName, SPLF_HANDLE hFSpool);
 int USmlVCreateSpoolFile(SPLF_HANDLE hFSpool, char const *pszFromUser,
 			 char const *pszRcptUser, char const *pszFileName, va_list Headers);
 int USmlCreateSpoolFile(SPLF_HANDLE hFSpool, char const *pszFromUser,
 			char const *pszRcptUser, char const *pszFileName, ...);
-int USmlProcessLocalUserMessage(SVRCFG_HANDLE hSvrConfig, UserInfo *pUI, SPLF_HANDLE hFSpool,
+int USmlProcessLocalUserMessage(SVRCFG_HANDLE hSvrConfig, UserInfoBean *pUI, SPLF_HANDLE hFSpool,
 				QUEUE_HANDLE hQueue, QMSG_HANDLE hMessage,
 				LocalMailProcConfig &LMPC);
 int USmlGetDomainCustomDir(char *pszCustomDir, int iMaxPath, int iFinalSlash);

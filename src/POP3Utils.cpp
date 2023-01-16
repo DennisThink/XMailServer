@@ -74,13 +74,15 @@ struct POP3SyncMsg {
 	SysListHead LLnk;
 	HashNode HN;
 	int iMsgSeq;
-	char *pszMsgID;
+	std::string m_strMsgID;
 	SYS_OFF_T llSize;
 };
 
 struct POP3SyncChannel {
-	char *pszRmtServer;
-	char *pszRmtName;
+	std::string m_strRmtServer;
+	std::string m_strRmtName;
+	//char *pszRmtServer;
+	//char *pszRmtName;
 	POP3ChannelCfg ChCfg;
 	BSOCK_HANDLE hBSock;
 	int iMsgCount;
@@ -112,7 +114,7 @@ struct POP3SessionData {
 	int iTimeout;
 };
 
-static int UPopBuildMessageList(UserInfo *pUI, SysListHead *pMsgList,
+static int UPopBuildMessageList(UserInfoBean *pUI, SysListHead *pMsgList,
 				int *piMsgCount = NULL, SYS_OFF_T *pllMBSize = NULL);
 static int UPopCheckResponse(char const *pszResponse, char *pszMessage = NULL);
 static int UPopCloseChannel(BSOCK_HANDLE hBSock, int iHardClose = 0);
@@ -122,7 +124,7 @@ static int UPopMailFileNameFilter(char const *pszFileName)
 	return *pszFileName != '.' ? 1: 0;
 }
 
-int UPopGetMailboxSize(UserInfo *pUI, SYS_OFF_T &llMBSize, unsigned long &ulNumMessages)
+int UPopGetMailboxSize(UserInfoBean *pUI, SYS_OFF_T &llMBSize, unsigned long &ulNumMessages)
 {
 	char szMBPath[SYS_MAX_PATH];
 
@@ -148,7 +150,7 @@ int UPopGetMailboxSize(UserInfo *pUI, SYS_OFF_T &llMBSize, unsigned long &ulNumM
 	return 0;
 }
 
-int UPopCheckMailboxSize(UserInfo *pUI, SYS_OFF_T *pllAvailSpace)
+int UPopCheckMailboxSize(UserInfoBean *pUI, SYS_OFF_T *pllAvailSpace)
 {
 	SYS_OFF_T llMBSize = 0, llProbeSize = (pllAvailSpace != NULL) ? *pllAvailSpace: 0;
 	unsigned long ulNumMessages = 0;
@@ -238,7 +240,7 @@ static void UPopFreeMessageList(SysListHead *pMsgList)
 	}
 }
 
-static int UPopBuildMessageList(UserInfo *pUI, SysListHead *pMsgList,
+static int UPopBuildMessageList(UserInfoBean *pUI, SysListHead *pMsgList,
 				int *piMsgCount, SYS_OFF_T *pllMBSize)
 {
 	char szMBPath[SYS_MAX_PATH];
@@ -312,29 +314,30 @@ static POP3MsgData *UPopMessageFromIndex(POP3SessionData *pPOPSD, int iMsgIndex)
 int UPopAuthenticateAPOP(char const *pszDomain, char const *pszUsrName,
 			 char const *pszTimeStamp, char const *pszDigest)
 {
-	UserInfo *pUI = UsrGetUserByName(pszDomain, pszUsrName);
-
-	if (pUI == NULL)
-		return ErrGetErrorCode();
-
-	int iAuthResult = MscMD5Authenticate(pUI->pszPassword, pszTimeStamp,
-					     pszDigest);
-
-	UsrFreeUserInfo(pUI);
-
-	return iAuthResult;
+	return 0;
+//UserInfoBean *pUI = UsrGetUserByName(pszDomain, pszUsrName);
+//
+//	if (pUI == NULL)
+//		return ErrGetErrorCode();
+//
+//	int iAuthResult = MscMD5Authenticate(pUI->pszPassword, pszTimeStamp,
+//					     pszDigest);
+//
+//	//UsrFreeUserInfo(pUI);
+//
+//	return iAuthResult;
 }
 
-static int UPopCheckPeerIP(UserInfo *pUI, SYS_INET_ADDR const &PeerInfo)
+static int UPopCheckPeerIP(UserInfoBean *pUI, SYS_INET_ADDR const &PeerInfo)
 {
-	char szIPMapFile[SYS_MAX_PATH];
+	/*char szIPMapFile[SYS_MAX_PATH];
 
 	UsrGetUserPath(pUI, szIPMapFile, sizeof(szIPMapFile), 1);
 	StrNCat(szIPMapFile, UPOP_IPMAP_FILE, sizeof(szIPMapFile));
 
 	if (SysExistFile(szIPMapFile) && MscCheckAllowedIP(szIPMapFile, PeerInfo,
 							   true) < 0)
-		return ErrGetErrorCode();
+		return ErrGetErrorCode();*/
 
 	return 0;
 }
@@ -342,7 +345,7 @@ static int UPopCheckPeerIP(UserInfo *pUI, SYS_INET_ADDR const &PeerInfo)
 POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 			     char const *pszUsrPass, SYS_INET_ADDR const *pPeerInfo)
 {
-	UserInfo *pUI;
+UserInfoBean *pUI;
 	POP3SessionData *pPOPSD;
 	//
 	UserInfoBean userInfo = UserUtils::GetUserInfoByDomainAndName(pszDomain, pszUsrName);
@@ -354,29 +357,29 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 
 	/* Check if the account is enabled for POP3 sessions */
 	/*if (!UsrGetUserInfoVarInt(pUI, "PopEnable", 1)) {
-		UsrFreeUserInfo(pUI);
+		//UsrFreeUserInfo(pUI);
 		ErrSetErrorCode(ERR_USER_DISABLED);
 		return INVALID_POP3_HANDLE;
 	}*/
 	/* Check if peer is allowed to connect from its IP */
 	/*if (pPeerInfo != NULL && UPopCheckPeerIP(pUI, *pPeerInfo) < 0) {
-		UsrFreeUserInfo(pUI);
+		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}*/
 	///if (pszUsrPass != NULL && strcmp(pszUsrPass, userinfo.pszPassword) != 0) {
 	if(pszUsrPass && userInfo.m_strPassword != std::string(pszUsrPass)){
-		//UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		ErrSetErrorCode(ERR_INVALID_PASSWORD);
 		return INVALID_POP3_HANDLE;
 	}
 	/*if (UsrPOP3Lock(pUI) < 0) {
-		UsrFreeUserInfo(pUI);
+		//UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}*/
 
 	if ((pPOPSD = (POP3SessionData *)SysUtil::SysAlloc(sizeof(POP3SessionData))) == NULL) {
 		//UsrPOP3Unlock(pUI);
-		//UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}
 	pPOPSD->PeerInfo = *pPeerInfo;
@@ -388,7 +391,7 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 				 &pPOPSD->llMBSize) < 0) {
 		SysUtil::SysFree(pPOPSD);
 		//UsrPOP3Unlock(pUI);
-		//UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}*/
 	//return INVALID_POP3_HANDLE;
@@ -401,7 +404,7 @@ POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
 		UPopFreeMessageList(&pPOPSD->MessageList);
 		SysUtil::SysFree(pPOPSD);
 		//UsrPOP3Unlock(pUI);
-		//UsrFreeUserInfo(pUI);
+		////UsrFreeUserInfo(pUI);
 		return INVALID_POP3_HANDLE;
 	}
 
@@ -455,7 +458,7 @@ void UPopReleaseSession(POP3_HANDLE hPOPSession, int iUpdate)
 		UPopUpdateMailbox(pPOPSD);
 	}
 	//UsrPOP3Unlock(pPOPSD->pUI);
-	//UsrFreeUserInfo(pPOPSD->pUI);
+	////UsrFreeUserInfo(pPOPSD->pUI);
 	UPopFreeMessageList(&pPOPSD->MessageList);
 SysUtil::SysFree(pPOPSD->ppMsgArray);
 SysUtil::SysFree(pPOPSD);
@@ -726,10 +729,10 @@ int UPopSessionTopMsg(POP3_HANDLE hPOPSession, int iMsgIndex, int iNumLines,
 	return 0;
 }
 
-static int UPopGetIpLogFilePath(UserInfo *pUI, char *pszFilePath, int iMaxPath)
+static int UPopGetIpLogFilePath(UserInfoBean *pUI, char *pszFilePath, int iMaxPath)
 {
-	UsrGetUserPath(pUI, pszFilePath, iMaxPath, 1);
-	StrNCat(pszFilePath, POP3_IP_LOGFILE, iMaxPath);
+	/*UsrGetUserPath(pUI, pszFilePath, iMaxPath, 1);
+	StrNCat(pszFilePath, POP3_IP_LOGFILE, iMaxPath);*/
 
 	return 0;
 }
@@ -1120,16 +1123,12 @@ static POP3SyncMsg *UPopSChanMsgAlloc(int iMsgSeq, char const *pszMsgID)
 	SYS_INIT_LIST_HEAD(&pSMsg->LLnk);
 	HashInitNode(&pSMsg->HN);
 	pSMsg->iMsgSeq = iMsgSeq;
-	pSMsg->pszMsgID = (pszMsgID != NULL) ? SysStrDup(pszMsgID): NULL;
+	pSMsg->m_strMsgID = pszMsgID;
 
 	return pSMsg;
 }
 
-static void UPopSChanMsgFree(POP3SyncMsg *pSMsg)
-{
-SysUtil::SysFree(pSMsg->pszMsgID);
-SysUtil::SysFree(pSMsg);
-}
+
 
 /*
  * This function should be called only if the remote server supported UIDL
@@ -1152,7 +1151,7 @@ static int UPopSChanFilterSeen(POP3SyncChannel *pPSChan)
 	     pPos = SYS_LIST_NEXT(pPos, &pPSChan->SyncMList)) {
 		pSMsg = SYS_LIST_ENTRY(pPos, POP3SyncMsg, LLnk);
 
-		pSMsg->HN.Key.pData = pSMsg->pszMsgID;
+		//pSMsg->HN.Key.pData =static_cast<void*>(pSMsg->m_strMsgID.c_str());
 		if (HashAdd(hHash, &pSMsg->HN) < 0) {
 			HashFree(hHash, NULL, NULL);
 			return ErrGetErrorCode();
@@ -1164,7 +1163,7 @@ static int UPopSChanFilterSeen(POP3SyncChannel *pPSChan)
 	 */
 	char szMsgSyncFile[SYS_MAX_PATH];
 
-	if (GwLkGetMsgSyncDbFile(pPSChan->pszRmtServer, pPSChan->pszRmtName,
+	if (GwLkGetMsgSyncDbFile(pPSChan->m_strRmtServer.c_str(), pPSChan->m_strRmtName.c_str(),
 				 szMsgSyncFile, sizeof(szMsgSyncFile) - 1) < 0) {
 		HashFree(hHash, NULL, NULL);
 		return ErrGetErrorCode();
@@ -1211,7 +1210,7 @@ static int UPopSChanWriteSeenDB(POP3SyncChannel *pPSChan)
 	 */
 	char szMsgSyncFile[SYS_MAX_PATH];
 
-	if (GwLkGetMsgSyncDbFile(pPSChan->pszRmtServer, pPSChan->pszRmtName,
+	if (GwLkGetMsgSyncDbFile(pPSChan->m_strRmtServer.c_str(), pPSChan->m_strRmtName.c_str(),
 				 szMsgSyncFile, sizeof(szMsgSyncFile) - 1) < 0)
 		return ErrGetErrorCode();
 
@@ -1237,7 +1236,7 @@ static int UPopSChanWriteSeenDB(POP3SyncChannel *pPSChan)
 	     pPos = SYS_LIST_NEXT(pPos, &pPSChan->SeenMList)) {
 		pSMsg = SYS_LIST_ENTRY(pPos, POP3SyncMsg, LLnk);
 
-		fprintf(pUFile, "%s\n", pSMsg->pszMsgID);
+		fprintf(pUFile, "%s\n", pSMsg->m_strMsgID.c_str());
 	}
 	fclose(pUFile);
 	RLckUnlockEX(hResLock);
@@ -1335,7 +1334,7 @@ static int UPopSChanFillStatus(POP3SyncChannel *pPSChan)
 	 */
 	if (pPSChan->ChCfg.ulFlags & POPCHF_LEAVE_MSGS) {
 		if (!iHasUIDLs) {
-			ErrSetErrorCode(ERR_NOREMOTE_POP3_UIDL, pPSChan->pszRmtServer);
+			ErrSetErrorCode(ERR_NOREMOTE_POP3_UIDL, pPSChan->m_strRmtServer.c_str());
 			return ERR_NOREMOTE_POP3_UIDL;
 		}
 		if (UPopSChanFilterSeen(pPSChan) < 0)
@@ -1355,16 +1354,14 @@ static void UPopSChanFree(POP3SyncChannel *pPSChan)
 	while ((pPos = SYS_LIST_FIRST(&pPSChan->SyncMList)) != NULL) {
 		pSMsg = SYS_LIST_ENTRY(pPos, POP3SyncMsg, LLnk);
 		SYS_LIST_DEL(&pSMsg->LLnk);
-		UPopSChanMsgFree(pSMsg);
+		//UPopSChanMsgFree(pSMsg);
 	}
 	while ((pPos = SYS_LIST_FIRST(&pPSChan->SeenMList)) != NULL) {
 		pSMsg = SYS_LIST_ENTRY(pPos, POP3SyncMsg, LLnk);
 		SYS_LIST_DEL(&pSMsg->LLnk);
-		UPopSChanMsgFree(pSMsg);
+		//UPopSChanMsgFree(pSMsg);
 	}
 	SysUtil::SysFree(pPSChan->ppSMsg);
-	SysUtil::SysFree(pPSChan->pszRmtServer);
-	SysUtil::SysFree(pPSChan->pszRmtName);
 	SysUtil::SysFree(pPSChan);
 }
 
@@ -1388,8 +1385,8 @@ static POP3SyncChannel *UPopSChanCreate(char const *pszRmtServer, char const *ps
 	SysUtil::SysFree(pPSChan);
 		return NULL;
 	}
-	pPSChan->pszRmtServer = SysStrDup(pszRmtServer);
-	pPSChan->pszRmtName = SysStrDup(pszRmtName);
+	pPSChan->m_strRmtServer =std::string(pszRmtServer);
+	pPSChan->m_strRmtName = std::string(pszRmtName);
 	if (UPopSChanFillStatus(pPSChan) < 0) {
 		UPopSChanFree(pPSChan);
 		return NULL;
@@ -1478,48 +1475,48 @@ int UPopSyncRemoteLink(char const *pszSyncAddr, char const *pszRmtServer,
 	return 0;
 }
 
-int UPopUserIpCheck(UserInfo *pUI, SYS_INET_ADDR const *pPeerInfo,
+int UPopUserIpCheck(UserInfoBean *pUI, SYS_INET_ADDR const *pPeerInfo,
 		    unsigned int uExpireTime)
 {
-	char szIpFilePath[SYS_MAX_PATH];
+	//char szIpFilePath[SYS_MAX_PATH];
 
-	UPopGetIpLogFilePath(pUI, szIpFilePath, sizeof(szIpFilePath));
+	//UPopGetIpLogFilePath(pUI, szIpFilePath, sizeof(szIpFilePath));
 
-	/* Load IP log file info and do expire check */
-	SYS_FILE_INFO FI;
+	///* Load IP log file info and do expire check */
+	//SYS_FILE_INFO FI;
 
-	if (SysGetFileInfo(szIpFilePath, FI) < 0 ||
-	    (time_t) (FI.tMod + uExpireTime) < time(NULL)) {
-		ErrSetErrorCode(ERR_NO_POP3_IP);
-		return ERR_NO_POP3_IP;
-	}
-	/* Load IP from file */
-	FILE *pIpFile = fopen(szIpFilePath, "rt");
+	//if (SysGetFileInfo(szIpFilePath, FI) < 0 ||
+	//    (time_t) (FI.tMod + uExpireTime) < time(NULL)) {
+	//	ErrSetErrorCode(ERR_NO_POP3_IP);
+	//	return ERR_NO_POP3_IP;
+	//}
+	///* Load IP from file */
+	//FILE *pIpFile = fopen(szIpFilePath, "rt");
 
-	if (pIpFile == NULL) {
-		ErrSetErrorCode(ERR_NO_POP3_IP);
-		return ERR_NO_POP3_IP;
-	}
+	//if (pIpFile == NULL) {
+	//	ErrSetErrorCode(ERR_NO_POP3_IP);
+	//	return ERR_NO_POP3_IP;
+	//}
 
-	char szIP[128] = "";
+	//char szIP[128] = "";
 
-	MscFGets(szIP, sizeof(szIP) - 1, pIpFile);
+	//MscFGets(szIP, sizeof(szIP) - 1, pIpFile);
 
-	fclose(pIpFile);
+	//fclose(pIpFile);
 
-	/* Do IP matching */
-	SYS_INET_ADDR CurrAddr;
+	///* Do IP matching */
+	//SYS_INET_ADDR CurrAddr;
 
-	if (SysGetHostByName(szIP, SysGetAddrFamily(*pPeerInfo), CurrAddr) < 0 ||
-	    !SysInetAddrMatch(*pPeerInfo, CurrAddr)) {
-		ErrSetErrorCode(ERR_NO_POP3_IP);
-		return ERR_NO_POP3_IP;
-	}
+	//if (SysGetHostByName(szIP, SysGetAddrFamily(*pPeerInfo), CurrAddr) < 0 ||
+	//    !SysInetAddrMatch(*pPeerInfo, CurrAddr)) {
+	//	ErrSetErrorCode(ERR_NO_POP3_IP);
+	//	return ERR_NO_POP3_IP;
+	//}
 
 	return 0;
 }
 
-int UPopGetLastLoginInfo(UserInfo *pUI, PopLastLoginInfo *pInfo)
+int UPopGetLastLoginInfo(UserInfoBean *pUI, PopLastLoginInfo *pInfo)
 {
 	SYS_FILE_INFO FI;
 	char szIpFilePath[SYS_MAX_PATH];

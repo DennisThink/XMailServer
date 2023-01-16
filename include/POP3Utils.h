@@ -42,8 +42,8 @@ struct PopLastLoginInfo {
 	time_t LTime;
 };
 
-int UPopGetMailboxSize(UserInfo *pUI, SYS_OFF_T &llMBSize, unsigned long &ulNumMessages);
-int UPopCheckMailboxSize(UserInfo *pUI, SYS_OFF_T *pllAvailSpace = NULL);
+int UPopGetMailboxSize(UserInfoBean *pUI, SYS_OFF_T &llMBSize, unsigned long &ulNumMessages);
+int UPopCheckMailboxSize(UserInfoBean *pUI, SYS_OFF_T *pllAvailSpace = NULL);
 int UPopAuthenticateAPOP(char const *pszDomain, char const *pszUsrName,
 			 char const *pszTimeStamp, char const *pszDigest);
 POP3_HANDLE UPopBuildSession(char const *pszDomain, char const *pszUsrName,
@@ -70,7 +70,7 @@ int UPopSyncRemoteLink(char const *pszSyncAddr, char const *pszRmtServer,
 		       MailSyncReport *pSRep, char const *pszSyncCfg,
 		       char const *pszFetchHdrTags = "+X-Deliver-To,To,Cc",
 		       char const *pszErrorAccount = NULL);
-int UPopUserIpCheck(UserInfo *pUI, SYS_INET_ADDR const *pPeerInfo, unsigned int uExpireTime);
-int UPopGetLastLoginInfo(UserInfo *pUI, PopLastLoginInfo *pInfo);
+int UPopUserIpCheck(UserInfoBean *pUI, SYS_INET_ADDR const *pPeerInfo, unsigned int uExpireTime);
+int UPopGetLastLoginInfo(UserInfoBean *pUI, PopLastLoginInfo *pInfo);
 
 #endif
