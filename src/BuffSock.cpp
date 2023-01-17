@@ -25,8 +25,9 @@
 #include "SvrDefines.h"
 #include "StrUtils.h"
 #include "BuffSock.h"
- //DennisThink
+//DennisThink
 #include "SysUtil.h"
+#include "logutil.h"
 //
 #define BSOCK_EOF                   INT_MIN
 #define BSOCK_STD_BUFFER_SIZE       1024
@@ -275,6 +276,7 @@ char *BSckGetString(BSOCK_HANDLE hBSock, char *pszBuffer, int iMaxChars, int iTi
 
 int BSckSendString(BSOCK_HANDLE hBSock, char const *pszBuffer, int iTimeout)
 {
+	
 	BuffSocketData *pBSD = (BuffSocketData *) hBSock;
 	char *pszSendBuffer = (char *)SysUtil::SysAlloc(strlen(pszBuffer) + 3);
 
@@ -282,7 +284,7 @@ int BSckSendString(BSOCK_HANDLE hBSock, char const *pszBuffer, int iTimeout)
 		return ErrGetErrorCode();
 
 	sprintf(pszSendBuffer, "%s\r\n", pszBuffer);
-
+	XMAIL_DEBUG("S:{}", pszSendBuffer);
 	int iSendLength = strlen(pszSendBuffer);
 
 	if (BSckWriteLL(pBSD, pszSendBuffer, iSendLength, iTimeout) != iSendLength) {
@@ -314,6 +316,7 @@ SysUtil::SysFree(pszBuffer);
 
 int BSckSendData(BSOCK_HANDLE hBSock, char const *pszBuffer, int iSize, int iTimeout)
 {
+	XMAIL_DEBUG("S:{}", pszBuffer);
 	BuffSocketData *pBSD = (BuffSocketData *) hBSock;
 
 	if (BSckWriteLL(pBSD, pszBuffer, iSize, iTimeout) != iSize)

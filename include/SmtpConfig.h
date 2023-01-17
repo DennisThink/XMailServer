@@ -13,5 +13,6 @@ public:
 	static std::string GetSmtpCustMapsList();
 	static int GetSmtpMaxMessageSize();
 	static bool DisableEmitAuthUser();
+	static std::string GetSmtpNoTLSAuths();
 };
 #endif

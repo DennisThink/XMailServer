@@ -149,6 +149,7 @@ struct SMTPSessionBean
 	char szRejMapName[256];
 	std::string m_strNoTLSAuths;
 	//char* pszNoTLSAuths;
+	SmtpEmailBean m_emailBean;
 };
 
 enum SmtpAuthFields {
@@ -272,9 +273,9 @@ static int SMTPCheckSysResources(SVRCFG_HANDLE hSvrConfig)
 		return ErrGetErrorCode();
 
 	/* Check virtual memory */
-	if (((iMinValue = SmtpConfig::GetSmtpMinVirtMemSpace()) > 0) &&
+	/*if (((iMinValue = SmtpConfig::GetSmtpMinVirtMemSpace()) > 0) &&
 	    (SvrCheckVirtMemSpace(1024 * (unsigned long) iMinValue) < 0))
-		return ErrGetErrorCode();
+		return ErrGetErrorCode();*/
 
 	return 0;
 }
@@ -692,10 +693,10 @@ static int SMTPInitSession(ThreadConfig const *pThCfg, BSOCK_HANDLE hBSock,
 	SMTPS.ulFlags |= SMTPS.ulSetupFlags;
 
 	/* Get custom message to append to the SMTP response */
-	SMTPS.m_strCustMsg = SvrGetConfigVar(SMTPS.hSvrConfig, "CustomSMTPMessage");
+	SMTPS.m_strCustMsg = "";// SvrGetConfigVar(SMTPS.hSvrConfig, "CustomSMTPMessage");
 
 	/* Get custom message to append to the SMTP response */
-	SMTPS.m_strNoTLSAuths = SvrGetConfigVar(SMTPS.hSvrConfig, "SmtpNoTLSAuths");
+	SMTPS.m_strNoTLSAuths = SmtpConfig::GetSmtpNoTLSAuths();
 
 	return 0;
 }
@@ -989,6 +990,7 @@ static int SMTPAddMessageInfo(SMTPSessionBean &SMTPS)
 				   SMTPS.szSvrDomain, SMTPS.SockInfo, SMTP_SERVER_NAME);
 }
 
+//handle CMD like "MAIL FROM:  <test@mailserver.com>"
 static int SMTPHandleCmd_MAIL(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPSessionBean &SMTPS)
 {
 	if (SMTPS.iSMTPState != stateHelo && SMTPS.iSMTPState != stateAuthenticated) {
@@ -1143,9 +1145,8 @@ static int SMTPHandleCmd_MAIL(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 			      ErrorFetch());
 		return ErrorPop();
 	}
-
 	BSckSendString(hBSock, "250 OK", SMTPS.pSMTPCfg->iTimeout);
-
+	SMTPS.m_emailBean.m_strMailFrom = pszCommand;
 	SMTPS.iSMTPState = stateMail;
 
 	return 0;
@@ -1745,6 +1746,9 @@ static int SMTPHandleCmd_RCPT(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 			(!SMTPS.m_strRealRcpt.empty()) ? SMTPS.m_strRealRcpt.c_str() : SMTPS.m_strSendRcpt.c_str());
 	}
 
+	{
+		SMTPS.m_emailBean.m_strReptTo = pszCommand;
+	}
 	BSckSendString(hBSock, "250 OK", SMTPS.pSMTPCfg->iTimeout);
 
 	++SMTPS.iRcptCount;
@@ -1880,6 +1884,9 @@ static int SMTPSubmitPackedFile(SMTPSessionBean &SMTPS, char const *pszPkgFile)
 			fclose(pPkgFile);
 			ErrSetErrorCode(ERR_FILE_CREATE);
 			return ERR_FILE_CREATE;
+		}
+		{
+			XMAIL_DEBUG("Smtp Mail Finished. \n{}", SMTPS.m_emailBean);
 		}
 		/* Write info line */
 		USmtpWriteInfoLine(pSpoolFile, ppszMsgInfo[smsgiClientAddr],
@@ -2034,7 +2041,9 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 			/* Write data on disk */
 			if (!fwrite(szBuffer, iLineLength, 1, SMTPS.pMsgFile)) {
 				ErrSetErrorCode(iError = ERR_FILE_WRITE, SMTPS.szMsgFile);
-
+			}
+			{
+				SMTPS.m_emailBean.m_strData += szBuffer;
 			}
 		}
 		ulMessageSize += (unsigned long) iLineLength;
@@ -2075,27 +2084,29 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 			return ErrorPop();
 		}
 
-		/* Transfer spool file */
-		if ((iError = SMTPSubmitPackedFile(SMTPS, SMTPS.szMsgFile)) < 0) {
-			SMTPResetSession(SMTPS);
+		///* Transfer spool file */
+		//if ((iError = SMTPSubmitPackedFile(SMTPS, SMTPS.szMsgFile)) < 0) {
+		//	SMTPResetSession(SMTPS);
 
-			SMTPSendError(hBSock, SMTPS,
-				      "451 Requested action aborted: (%d) local error in processing",
-				      ErrGetErrorCode());
-		} else {
+		//	SMTPSendError(hBSock, SMTPS,
+		//		      "451 Requested action aborted: (%d) local error in processing",
+		//		      ErrGetErrorCode());
+		//} else {
 			/* Log the message receive */
 			if (SmtpConfig::EnableLog())
 			{
 				////SMTPLogSession(SMTPS, SMTPS.pszFrom, SMTPS.pszRcpt, "RECV=OK",
 				//	ulMessageSize);
 			}
-
+			{
+				
+			}
 			/* Send the ack only when everything is OK */
 			BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout, "250 OK <%s>",
 					SMTPS.szMessageID);
 
 			SMTPResetSession(SMTPS);
-		}
+		//}
 	} else {
 		SMTPResetSession(SMTPS);
 
@@ -2107,7 +2118,7 @@ static int SMTPHandleCmd_DATA(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 		else
 			SMTPSendError(hBSock, SMTPS, "%s", pszSmtpError);
 	}
-
+	XMAIL_DEBUG("SMTP MAIL:{} ", SMTPS.m_emailBean);
 	return iError;
 }
 
@@ -2335,8 +2346,8 @@ SysUtil::SysFree(pszDomain);
 		StrDynPrint(&DynS, "250 SIZE %lu\r\n", SMTPS.ulMaxMsgSize);
 	else
 		StrDynAdd(&DynS, "250 SIZE\r\n");
-	if (!iLinkSSL && SvrTestConfigFlag("EnableSMTP-TLS", true, SMTPS.hSvrConfig))
-		StrDynAdd(&DynS, "250 STARTTLS\r\n");
+	/*if (!iLinkSSL && SvrTestConfigFlag("EnableSMTP-TLS", true, SMTPS.hSvrConfig))
+		StrDynAdd(&DynS, "250 STARTTLS\r\n");*/
 
 	/* Send EHLO response file */
 	if (SMTPSendMultilineResponse(hBSock, SMTPS.pSMTPCfg->iTimeout,
@@ -3210,6 +3221,7 @@ static int SMTPHandleCmd_ETRN(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 
 static int SMTPHandleCommand(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPSessionBean &SMTPS)
 {
+	XMAIL_DEBUG("C:{}", pszCommand);
 	/* Delay protection against massive spammers */
 	if (SMTPS.iCmdDelay > 0)
 		SysSleep(SMTPS.iCmdDelay);

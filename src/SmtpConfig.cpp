@@ -45,3 +45,8 @@ bool SmtpConfig::DisableEmitAuthUser()
 {
 	return true;
 }
+
+std::string SmtpConfig::GetSmtpNoTLSAuths()
+{
+	return "NoTLSAuth";
+}

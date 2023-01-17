@@ -24,7 +24,7 @@
 #define _SMTPSVR_H
 
 #define SMTP_SERVER_NAME           "[" APP_NAME_VERSION_STR " ESMTP Server]"
-#define STD_SMTP_PORT               25
+#define STD_SMTP_PORT               1255
 #define SMTPS_SERVER_NAME          "[" APP_NAME_VERSION_STR " ESMTPS Server]"
 #define STD_SMTPS_PORT              465
 #define SMTP_LISTEN_SIZE            64

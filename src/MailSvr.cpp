@@ -1477,16 +1477,20 @@ int SvrMain(int iArgCount, char *pszArgs[])
 	}
 
 	ArrayInit(iSvcI, -1);
-	if ((iSvcI[SVC_SMAIL] = SvrSetupSMAIL(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_CTRL] = SvrSetupCTRL(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_CTRLS] = SvrSetupCTRLS(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_POP3] = SvrSetupPOP3(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_POP3S] = SvrSetupPOP3S(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_SMTP] = SvrSetupSMTP(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_SMTPS] = SvrSetupSMTPS(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_PSYNC] = SvrSetupPSYNC(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_FING] = SvrSetupFING(iMergeArgsCount, ppszMergeArgs)) < 0 ||
-	    (iSvcI[SVC_LMAIL] = SvrSetupLMAIL(iMergeArgsCount, ppszMergeArgs)) < 0) {
+	//if ((iSvcI[SVC_SMAIL] = SvrSetupSMAIL(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_CTRL] = SvrSetupCTRL(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_CTRLS] = SvrSetupCTRLS(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_POP3] = SvrSetupPOP3(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_POP3S] = SvrSetupPOP3S(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_SMTP] = SvrSetupSMTP(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_SMTPS] = SvrSetupSMTPS(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_PSYNC] = SvrSetupPSYNC(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_FING] = SvrSetupFING(iMergeArgsCount, ppszMergeArgs)) < 0 ||
+	//    (iSvcI[SVC_LMAIL] = SvrSetupLMAIL(iMergeArgsCount, ppszMergeArgs)) < 0) {
+	//	StrFreeStrings(ppszMergeArgs);
+	//	goto ErrorExit;
+	//}
+	if ((iSvcI[SVC_SMTP] = SvrSetupSMTP(iMergeArgsCount, ppszMergeArgs)) < 0) {
 		StrFreeStrings(ppszMergeArgs);
 		goto ErrorExit;
 	}
