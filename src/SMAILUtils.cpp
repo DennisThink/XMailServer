@@ -1046,7 +1046,7 @@ int USmlCreateMBFile(UserInfoBean *pUI, char const *pszFileName, SPLF_HANDLE hFS
 		/* Add "Delivered-To:" tag */
 		char szUserAddress[MAX_ADDR_NAME] = "";
 
-		UsrGetAddress(pUI, szUserAddress);
+		UsrGetAddress(*pUI, szUserAddress);
 		fprintf(pMBFile, "Delivered-To: %s" SYS_EOL, szUserAddress);
 	} else
 	SysUtil::SysFree(pszReturnPath);
@@ -1271,7 +1271,7 @@ static int USmlLocalDelivery(SVRCFG_HANDLE hSvrConfig,UserInfoBean *pUI, SPLF_HA
 	if (LMPC.ulFlags & LMPCF_LOG_ENABLED) {
 		char szLocalAddress[MAX_ADDR_NAME] = "";
 
-		USmlLogMessage(hFSpool, "LOCAL", NULL, UsrGetAddress(pUI, szLocalAddress));
+		USmlLogMessage(hFSpool, "LOCAL", NULL, UsrGetAddress(*pUI, szLocalAddress));
 	}
 
 	return 0;
@@ -1294,7 +1294,7 @@ static char *USmlMacroLkupProc(void *pPrivate, char const *pszName, int iSize)
 	} else if (MemMatch(pszName, iSize, "RRCPT", 5)) {
 		char szUserAddress[MAX_ADDR_NAME] = "";
 
-		UsrGetAddress(pMSC->pUI, szUserAddress);
+		UsrGetAddress(*pMSC->pUI, szUserAddress);
 
 		return SysStrDup(szUserAddress);
 	} else if (MemMatch(pszName, iSize, "FILE", 4)) {
@@ -1508,7 +1508,7 @@ static int USmlCmd_redirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE 
 
 	char szUserAddress[MAX_ADDR_NAME] = "";
 
-	UsrGetAddress(pUI, szUserAddress);
+	UsrGetAddress(*pUI, szUserAddress);
 
 	/* Redirection loop */
 	char const *pszSMTPDomain = USmlGetSMTPDomain(hFSpool);
@@ -1565,7 +1565,7 @@ static int USmlCmd_lredirect(char **ppszCmdTokens, int iNumTokens, SVRCFG_HANDLE
 
 	char szUserAddress[MAX_ADDR_NAME] = "";
 
-	UsrGetAddress(pUI, szUserAddress);
+	UsrGetAddress(*pUI, szUserAddress);
 
 	/* Redirection loop */
 	for (int i = 1; ppszCmdTokens[i] != NULL; i++) {

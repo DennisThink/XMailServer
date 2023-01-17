@@ -197,7 +197,7 @@ static int UsrRebuildAliasesIndexes(char const *pszAlsFilePath)
 	return 0;
 }
 
-char *UsrGetMLTableFilePath(UserInfoBean *pUI, char *pszMLTablePath, int iMaxPath)
+char *UsrGetMLTableFilePath(UserInfoBean pUI, char *pszMLTablePath, int iMaxPath)
 {
 	/*UsrGetUserPath(pUI, pszMLTablePath, iMaxPath, 1);
 	StrNCat(pszMLTablePath, MLUSERS_TABLE_FILE, iMaxPath);
@@ -206,7 +206,7 @@ char *UsrGetMLTableFilePath(UserInfoBean *pUI, char *pszMLTablePath, int iMaxPat
 	return nullptr;
 }
 
-UserType UsrGetUserType(UserInfoBean*pUI)
+UserType UsrGetUserType(UserInfoBean pUI)
 {
 	/*if (pUI->pszType == NULL)
 		return usrTypeError;
@@ -222,10 +222,11 @@ UserType UsrGetUserType(UserInfoBean*pUI)
 	return usrTypeError;
 }
 
-UserInfoBean *UsrCreateDefaultUser(char const *pszDomain, char const *pszName,
+UserInfoBean UsrCreateDefaultUser(char const *pszDomain, char const *pszName,
 			       char const *pszPassword, UserType TypeUser)
 {
-	return nullptr;
+	UserInfoBean result;
+	return result;
     /*UserInfoBean* pUI = (UserInfoBean*)SysUtil::SysAlloc(sizeof(UserInfoBean));
 
 	if (pUI == NULL)
@@ -373,7 +374,7 @@ static UserInfoVar *UsrGetUserVar(HSLIST &InfoList, char const *pszName)
 }
 
 
-char *UsrGetUserInfoVar(UserInfoBean *pUI, char const *pszName, char const *pszDefault)
+char *UsrGetUserInfoVar(UserInfoBean pUI, char const *pszName, char const *pszDefault)
 {
 	return nullptr;
 	/*UserInfoVar* pUIV = UsrGetUserVar(pUI->InfoList, pszName);
@@ -384,7 +385,7 @@ char *UsrGetUserInfoVar(UserInfoBean *pUI, char const *pszName, char const *pszD
 	return (pszDefault != NULL) ? SysStrDup(pszDefault): NULL;*/
 }
 
-int UsrGetUserInfoVarInt(UserInfoBean *pUI, char const *pszName, int iDefault)
+int UsrGetUserInfoVarInt(UserInfoBean pUI, char const *pszName, int iDefault)
 {
 	return 0;
 	/*UserInfoVar* pUIV = UsrGetUserVar(pUI->InfoList, pszName);
@@ -392,7 +393,7 @@ int UsrGetUserInfoVarInt(UserInfoBean *pUI, char const *pszName, int iDefault)
 	return (pUIV != NULL) ? atoi(pUIV->pszValue): iDefault;*/
 }
 
-int UsrDelUserInfoVar(UserInfoBean*pUI, char const *pszName)
+int UsrDelUserInfoVar(UserInfoBean pUI, char const *pszName)
 {
 	/*UserInfoVar* pUIV = UsrGetUserVar(pUI->InfoList, pszName);
 
@@ -406,7 +407,7 @@ int UsrDelUserInfoVar(UserInfoBean*pUI, char const *pszName)
 	return 0;
 }
 
-int UsrSetUserInfoVar(UserInfoBean *pUI, char const *pszName, char const *pszValue)
+int UsrSetUserInfoVar(UserInfoBean pUI, char const *pszName, char const *pszValue)
 {
 	/*
 	UserInfoVar *pUIV = UsrGetUserVar(pUI->InfoList, pszName);
@@ -424,7 +425,7 @@ int UsrSetUserInfoVar(UserInfoBean *pUI, char const *pszName, char const *pszVal
 	return 0;
 }
 
-char **UsrGetProfileVars(UserInfoBean *pUI)
+char **UsrGetProfileVars(UserInfoBean pUI)
 {
 	/*int iVarsCount = ListGetCount(pUI->InfoList);
 	char **ppszVars = (char **)SysUtil::SysAlloc((iVarsCount + 1) * sizeof(char *));
@@ -1057,19 +1058,6 @@ UserInfoBean *pUI = UsrGetUserByNameLK(szUsrFilePath, pszDomain, pszName);
 	return pUI;*/
 }
 
-UserInfoBean *UsrGetUserByName(char const *pszDomain, char const *pszName)
-{
-	return nullptr;
-	/* Check for alias domain */
-	//UserInfoBean *pUI = UsrLookupUser(pszDomain, pszName);
-	//char szADomain[MAX_HOST_NAME];
-
-	/* Check for alias domain if first lookup failed */
-	/*if (pUI == NULL && ADomLookupDomain(pszDomain, szADomain, true))
-		pUI = UsrLookupUser(szADomain, pszName);
-
-	return pUI;*/
-}
 
 static UserInfoBean *UsrGetUserByNameOrAliasNDA(char const *pszDomain, char const *pszName,
 					    char *pszRealAddr)
@@ -1313,7 +1301,7 @@ UserInfoBean *pUI = NULL;
 	return 0;
 }
 
-int UsrModifyUser(UserInfoBean *pUI)
+int UsrModifyUser(UserInfoBean pUI)
 {
 //	char szUsrFilePath[SYS_MAX_PATH];
 //
@@ -1529,7 +1517,7 @@ static int UsrPrepareUserEnv(UserInfoBean *pUI)
 	if (SysMakeDir(szUsrUserPath) < 0)
 		return ErrGetErrorCode();
 
-	if (UsrGetUserType(pUI) == usrTypeUser) {
+	if (UsrGetUserType(*pUI) == usrTypeUser) {
 		/* Create mailbox directory */
 		if (UsrCreateMailbox(szUsrUserPath) < 0) {
 			ErrorPush();
@@ -1579,7 +1567,7 @@ static int UsrPrepareUserEnv(UserInfoBean *pUI)
 	return 0;
 }
 
-int UsrAddUser(UserInfoBean *pUI)
+int UsrAddUser(UserInfoBean pUI)
 {
 	/* Search for overlapping alias ( wildcard alias not checked here ) */
 	//if (UsrAliasLookupName(pUI->pszDomain, pUI->pszName, NULL, false)) {
@@ -1677,7 +1665,7 @@ static char const *UsrGetMailboxDir(void)
 	return (iMailboxType == XMAIL_MAILBOX) ? MAILBOX_DIRECTORY: MAILDIR_DIRECTORY;
 }
 
-int UsrFlushUserVars(UserInfoBean *pUI)
+int UsrFlushUserVars(UserInfoBean pUI)
 {
 	//char szUsrUserPath[SYS_MAX_PATH];
 
@@ -1832,7 +1820,7 @@ static char *UsrGetPop3LocksPath(UserInfoBean *pUI, char *pszPop3LockPath, int i
 
 	char szUserAddress[MAX_ADDR_NAME];
 
-	UsrGetAddress(pUI, szUserAddress);
+	UsrGetAddress(*pUI, szUserAddress);
 	StrNCat(pszPop3LockPath, szUserAddress, iMaxPath);
 
 	return pszPop3LockPath;
@@ -2066,7 +2054,7 @@ int UsrSetMailProcessFile(UserInfoBean *pUI, char const *pszMPPath, int iWhich)
 	return 0;
 }
 
-char *UsrGetAddress(UserInfoBean *pUI, char *pszAddress)
+char *UsrGetAddress(UserInfoBean pUI, char *pszAddress)
 {
 	return nullptr;
 	/*sprintf(pszAddress, "%s@%s", pUI->pszName, pUI->pszDomain);

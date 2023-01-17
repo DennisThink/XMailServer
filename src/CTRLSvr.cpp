@@ -51,6 +51,7 @@
 #include "CTRLSvr.h"
  //DennisThink
 #include "SysUtil.h"
+#include "UserUtils.h"
 //
 #define CTRL_ACCOUNTS_FILE      "ctrlaccounts.tab"
 #define CTRL_ACCOUNTS_LINE_MAX  512
@@ -426,10 +427,10 @@ static int CTRLDo_useradd(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrCreateDefaultUser(ppszTokens[1], ppszTokens[2], ppszTokens[3],
+UserInfoBean pUI = UsrCreateDefaultUser(ppszTokens[1], ppszTokens[2], ppszTokens[3],
 					     (ppszTokens[4][0] == 'M') ? usrTypeML: usrTypeUser);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		return ErrorPop();
@@ -489,9 +490,9 @@ static int CTRLDo_userpasswd(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 	/* Check real user account existence */
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (!pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -531,9 +532,9 @@ static int CTRLDo_aliasadd(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		StrSNCpy(szAccountDomain, ppszTokens[1]);
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(szAccountDomain, szAccountName);
+    UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(szAccountDomain, szAccountName);
 
-	if (pUI == NULL) {
+	if (!pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -542,7 +543,8 @@ UserInfoBean *pUI = UsrGetUserByName(szAccountDomain, szAccountName);
 	////UsrFreeUserInfo(pUI);
 
 	/* Check if we're overlapping an existing users with the new alias */
-	if ((pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2])) != NULL) {
+	UserInfoBean userInfo2 = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
+	if (userInfo2.Valid()) {
 		////UsrFreeUserInfo(pUI);
 
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ERR_USER_EXIST);
@@ -845,9 +847,9 @@ static int CTRLDo_uservars(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(pszDomain, pszName);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(pszDomain, pszName);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -905,9 +907,9 @@ static int CTRLDo_uservarsset(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(pszDomain, pszName);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(pszDomain, pszName);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -1027,9 +1029,9 @@ static int CTRLDo_usergetmproc(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 	}
 
 	/* Check real user account existence */
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -1038,7 +1040,7 @@ UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
 	char szMPFile[SYS_MAX_PATH] = "";
 
 	UsrGetTmpFile(NULL, szMPFile, sizeof(szMPFile));
-	if (UsrGetMailProcessFile(pUI, szMPFile, ulGMPFlags) < 0) {
+	if (UsrGetMailProcessFile(&pUI, szMPFile, ulGMPFlags) < 0) {
 		ErrorPush();
 		////UsrFreeUserInfo(pUI);
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
@@ -1082,9 +1084,9 @@ static int CTRLDo_usersetmproc(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 	}
 
 	/* Check real user account existence */
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
@@ -1115,7 +1117,7 @@ UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
 		return ErrorPop();
 	}
 	/* Set mailproc file ( or delete it if size == 0 ) */
-	if (UsrSetMailProcessFile(pUI, (FI.llSize != 0) ? szMPFile: NULL,
+	if (UsrSetMailProcessFile(&pUI, (FI.llSize != 0) ? szMPFile: NULL,
 				  iWhichMP) < 0) {
 		ErrorPush();
 		SysRemove(szMPFile);
@@ -1141,15 +1143,15 @@ static int CTRLDo_userauth(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ERR_BAD_CTRL_COMMAND;
 	}
 	/* Check real user account existence */
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrorFetch());
 		return ErrorPop();
 	}
 	/* Check password */
-	if (strcmp(pUI->m_strPassword.c_str(), ppszTokens[3]) != 0) {
+	if (strcmp(pUI.m_strPassword.c_str(), ppszTokens[3]) != 0) {
 		////UsrFreeUserInfo(pUI);
 
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ERR_INVALID_PASSWORD);
@@ -1248,9 +1250,9 @@ static int CTRLDo_mluseradd(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		return ErrorPop();
@@ -1274,7 +1276,7 @@ UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
 		return ErrorPop();
 	}
 
-	if (UsrMLAddUser(pUI, pMLUI) < 0) {
+	if (UsrMLAddUser(&pUI, pMLUI) < 0) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		UsrMLFreeUser(pMLUI);
@@ -1306,9 +1308,9 @@ static int CTRLDo_mluserdel(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		return ErrorPop();
@@ -1322,7 +1324,7 @@ UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
 		return ERR_USER_NOT_MAILINGLIST;
 	}
 
-	if (UsrMLRemoveUser(pUI, ppszTokens[3]) < 0) {
+	if (UsrMLRemoveUser(&pUI, ppszTokens[3]) < 0) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		////UsrFreeUserInfo(pUI);
@@ -1351,9 +1353,9 @@ static int CTRLDo_mluserlist(CTRLConfig *pCTRLCfg, BSOCK_HANDLE hBSock,
 		return ErrorPop();
 	}
 
-UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
+UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(ppszTokens[1], ppszTokens[2]);
 
-	if (pUI == NULL) {
+	if (pUI.Valid()) {
 		ErrorPush();
 		CTRLSendCmdResult(pCTRLCfg, hBSock, ErrGetErrorCode());
 		return ErrorPop();
@@ -1367,7 +1369,7 @@ UserInfoBean *pUI = UsrGetUserByName(ppszTokens[1], ppszTokens[2]);
 		return ERR_USER_NOT_MAILINGLIST;
 	}
 
-	USRML_HANDLE hUsersDB = UsrMLOpenDB(pUI);
+	USRML_HANDLE hUsersDB = UsrMLOpenDB(&pUI);
 
 	if (hUsersDB == INVALID_USRML_HANDLE) {
 		ErrorPush();

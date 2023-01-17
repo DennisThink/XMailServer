@@ -40,6 +40,7 @@
 #include "PSYNCSvr.h"
 //DennisThink
 #include "SysUtil.h"
+#include "UserUtils.h"
 //
 #define PSYNC_LOG_FILE              "psync"
 #define PSYNC_TRIGGER_FILE          ".psync-trigger"
@@ -225,9 +226,9 @@ SysUtil::SysFree(pSTD);
 
 	if (GwLkLocalDomain(pPopLnk)) {
 		/* Verify user credentials */
-	UserInfoBean *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
+	UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(pPopLnk->pszDomain, pPopLnk->pszName);
 
-		if (pUI != NULL) {
+		if (pUI.Valid()) {
 			SysLogMessage(LOG_LEV_MESSAGE,
 				      "[PSYNC] User = \"%s\" - Domain = \"%s\"\n",
 				      pPopLnk->pszName, pPopLnk->pszDomain);
@@ -235,7 +236,7 @@ SysUtil::SysFree(pSTD);
 			/* Sync */
 			char szUserAddress[MAX_ADDR_NAME] = "";
 
-			UsrGetAddress(pUI, szUserAddress);
+			//UsrGetAddress(pUI, szUserAddress);
 
 			if (UPopSyncRemoteLink(szUserAddress, pPopLnk->pszRmtDomain,
 					       pPopLnk->pszRmtName, pPopLnk->pszRmtPassword, &SRep,

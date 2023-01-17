@@ -112,7 +112,7 @@ SysUtil::SysFree(pMLUI);
 
 int UsrMLCheckUserPost(UserInfoBean * pUI, char const *pszUser, char const *pszLogonUser)
 {
-	char *pszClosed = UsrGetUserInfoVar(pUI, "ClosedML");
+	char *pszClosed = UsrGetUserInfoVar(*pUI, "ClosedML");
 
 	if (pszClosed != NULL) {
 		int iClosedML = atoi(pszClosed);
@@ -176,14 +176,14 @@ SysUtil::SysFree(pszQuoted);
 
 int UsrMLAddUser(UserInfoBean * pUI, MLUserInfo const *pMLUI)
 {
-	if (UsrGetUserType(pUI) != usrTypeML) {
+	if (UsrGetUserType(*pUI) != usrTypeML) {
 		ErrSetErrorCode(ERR_USER_NOT_MAILINGLIST);
 		return ERR_USER_NOT_MAILINGLIST;
 	}
 
 	char szMLTablePath[SYS_MAX_PATH] = "";
 
-	UsrGetMLTableFilePath(pUI, szMLTablePath, sizeof(szMLTablePath));
+	UsrGetMLTableFilePath(*pUI, szMLTablePath, sizeof(szMLTablePath));
 
 	char szResLock[SYS_MAX_PATH] = "";
 	RLCK_HANDLE hResLock = RLckLockEX(CfgGetBasedPath(szMLTablePath, szResLock,
@@ -240,14 +240,14 @@ int UsrMLAddUser(UserInfoBean * pUI, MLUserInfo const *pMLUI)
 
 int UsrMLRemoveUser(UserInfoBean * pUI, const char *pszMLUser)
 {
-	if (UsrGetUserType(pUI) != usrTypeML) {
+	if (UsrGetUserType(*pUI) != usrTypeML) {
 		ErrSetErrorCode(ERR_USER_NOT_MAILINGLIST);
 		return ERR_USER_NOT_MAILINGLIST;
 	}
 
 	char szMLTablePath[SYS_MAX_PATH] = "";
 
-	UsrGetMLTableFilePath(pUI, szMLTablePath, sizeof(szMLTablePath));
+	UsrGetMLTableFilePath(*pUI, szMLTablePath, sizeof(szMLTablePath));
 
 	char szTmpFile[SYS_MAX_PATH] = "";
 
@@ -321,7 +321,7 @@ int UsrMLGetUsersFileSnapShot(UserInfoBean * pUI, const char *pszFileName)
 {
 	char szMLTablePath[SYS_MAX_PATH] = "";
 
-	UsrGetMLTableFilePath(pUI, szMLTablePath, sizeof(szMLTablePath));
+	UsrGetMLTableFilePath(*pUI, szMLTablePath, sizeof(szMLTablePath));
 
 	char szResLock[SYS_MAX_PATH] = "";
 	RLCK_HANDLE hResLock = RLckLockSH(CfgGetBasedPath(szMLTablePath, szResLock,

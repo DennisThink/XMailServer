@@ -158,7 +158,7 @@ int UPopCheckMailboxSize(UserInfoBean *pUI, SYS_OFF_T *pllAvailSpace)
 
 	if (UPopGetMailboxSize(pUI, llMBSize, ulNumMessages) < 0)
 		return ErrGetErrorCode();
-	if ((pszMaxMBSize = UsrGetUserInfoVar(pUI, "MaxMBSize")) != NULL) {
+	if ((pszMaxMBSize = UsrGetUserInfoVar(*pUI, "MaxMBSize")) != NULL) {
 		SYS_OFF_T llMaxMBSize = Sys_atoi64(pszMaxMBSize) * 1024;
 
 	SysUtil::SysFree(pszMaxMBSize);
@@ -268,7 +268,7 @@ static int UPopBuildMessageList(UserInfoBean *pUI, SysListHead *pMsgList,
 			return ErrorPop();
 		}
 	} else {
-		int iScanCur = UsrGetUserInfoVarInt(pUI, "Pop3ScanCur", 0);
+		int iScanCur = UsrGetUserInfoVarInt(*pUI, "Pop3ScanCur", 0);
 
 		if (UPopFillMessageList(szMBPath, "new", pMsgList, iMsgCount,
 					llMBSize) < 0 ||

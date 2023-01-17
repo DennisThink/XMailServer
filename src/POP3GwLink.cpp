@@ -37,6 +37,7 @@
 #include "POP3GwLink.h"
  //DennisThink
 #include "SysUtil.h"
+#include "UserUtils.h"
 //
 #define SVR_LINKS_FILE              "pop3links.tab"
 #define SVR_LINKS_ENABLE_DIR        "pop3links"
@@ -287,14 +288,14 @@ int GwLkAddLink(POP3Link *pPopLnk)
 static int GwLkGetDisableFilePath(POP3Link const *pPopLnk, char *pszEnableFile)
 {
 	if (GwLkLocalDomain(pPopLnk)) {
-	UserInfoBean *pUI = UsrGetUserByName(pPopLnk->pszDomain, pPopLnk->pszName);
+	UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(pPopLnk->pszDomain, pPopLnk->pszName);
 
-		if (pUI == NULL)
+		if (pUI.Valid())
 			return ErrGetErrorCode();
 
 		char szUserPath[SYS_MAX_PATH] = "";
 
-		if (UsrGetUserPath(pUI, szUserPath, sizeof(szUserPath), 1) == NULL) {
+		if (UsrGetUserPath(&pUI, szUserPath, sizeof(szUserPath), 1) == NULL) {
 			ErrorPush();
 			//UsrFreeUserInfo(pUI);
 			return ErrorPop();

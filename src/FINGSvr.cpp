@@ -171,10 +171,10 @@ static int FINGDumpUser(char const *pszUser, char const *pszDomain,
 UserInfoBean *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser, szRealAddr);
 
 	if (pUI != NULL) {
-		if (UsrGetUserType(pUI) == usrTypeUser) {
+		if (UsrGetUserType(*pUI) == usrTypeUser) {
 			/* Local user case */
-			char *pszRealName = UsrGetUserInfoVar(pUI, "RealName");
-			char *pszHomePage = UsrGetUserInfoVar(pUI, "HomePage");
+			char *pszRealName = UsrGetUserInfoVar(*pUI, "RealName");
+			char *pszHomePage = UsrGetUserInfoVar(*pUI, "HomePage");
 			char szRespBuffer[2048] = "";
 
 			SysSNPrintf(szRespBuffer, sizeof(szRespBuffer),

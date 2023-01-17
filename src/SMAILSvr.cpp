@@ -169,10 +169,10 @@ static int SMAILMailingListExplode(UserInfoBean *pUI, SPLF_HANDLE hFSpool)
 
 	/* Get Mailing List Sender address. If this account variable does not exist */
 	/* the sender will be the "real" message sender */
-	char *pszMLSender = UsrGetUserInfoVar(pUI, "ListSender");
+	char *pszMLSender = UsrGetUserInfoVar(*pUI, "ListSender");
 
 	/* Check if the use of the Reply-To: is requested */
-	int iUseReplyTo = UsrGetUserInfoVarInt(pUI, "UseReplyTo", 1);
+	int iUseReplyTo = UsrGetUserInfoVarInt(*pUI, "UseReplyTo", 1);
 
 	USRML_HANDLE hUsersDB = UsrMLOpenDB(pUI);
 
@@ -1336,7 +1336,7 @@ static int SMAILProcessFile(SVRCFG_HANDLE hSvrConfig, SHB_HANDLE hShbSMAIL,
 				      USmlGetSMTPDomain(hFSpool), USmlMailFrom(hFSpool),
 				      ppszRcpt[0]);
 
-			if (UsrGetUserType(pUI) == usrTypeUser) {
+			if (UsrGetUserType(*pUI) == usrTypeUser) {
 				/* Local user case */
 				LocalMailProcConfig LMPC;
 

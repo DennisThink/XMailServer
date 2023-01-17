@@ -748,7 +748,7 @@ static void SMTPFullResetSession(SMTPSessionBean &SMTPS)
 static int SMTPGetUserSmtpPerms(UserInfoBean *pUI, SVRCFG_HANDLE hSvrConfig, char *pszPerms,
 				int iMaxPerms)
 {
-	char *pszUserPerms = UsrGetUserInfoVar(pUI, "SmtpPerms");
+	char *pszUserPerms = UsrGetUserInfoVar(*pUI, "SmtpPerms");
 
 	if (pszUserPerms != NULL) {
 		StrNCpy(pszPerms, pszUserPerms, iMaxPerms);
@@ -870,7 +870,7 @@ UserInfoBean *pUI = UsrGetUserByNameOrAlias(pszDomain, pszUser);
 	}
 	/* If the user did not authenticate, set the logon user token */
 	if (IsEmptyString(SMTPS.szLogonUser))
-		UsrGetAddress(pUI, SMTPS.szLogonUser);
+		UsrGetAddress(*pUI, SMTPS.szLogonUser);
 
 	////UsrFreeUserInfo(pUI);
 
@@ -1490,7 +1490,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 
 			if (pUI != NULL) {
 				/* Check if the account is enabled for receiving */
-				if (!UsrGetUserInfoVarInt(pUI, "ReceiveEnable", 1)) {
+				if (!UsrGetUserInfoVarInt(*pUI, "ReceiveEnable", 1)) {
 					////UsrFreeUserInfo(pUI);
 
 					if (SmtpConfig::EnableLog())
@@ -1507,7 +1507,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 					return ERR_USER_DISABLED;
 				}
 
-				if (UsrGetUserType(pUI) == usrTypeUser) {
+				if (UsrGetUserType(*pUI) == usrTypeUser) {
 					/* Target is a normal user */
 
 					/* Check user mailbox size */
@@ -1552,7 +1552,7 @@ static int SMTPCheckForwardPath(char **ppszFwdDomains, SMTPSessionBean &SMTPS,
 					}
 				}
 				/* Extract the real user address */
-				UsrGetAddress(pUI, szRealUser);
+				UsrGetAddress(*pUI, szRealUser);
 
 				////UsrFreeUserInfo(pUI);
 			} else {
@@ -2834,9 +2834,9 @@ static int SMTPTryApplyLocalCMD5Auth(SMTPSessionBean &SMTPS, char const *pszChal
 			   szAccountDomain, sizeof(szAccountDomain)) < 0)
 		return ErrGetErrorCode();
 
-UserInfoBean *pUI = UsrGetUserByName(szAccountDomain, szAccountUser);
+	UserInfoBean pUI = UserUtils::GetUserInfoByDomainAndName(szAccountDomain, szAccountUser);
 
-	if (pUI != NULL) {
+	if (pUI.Valid()) {
 		/* Compute MD5 response ( secret , challenge , digest ) */
 		char szCurrDigest[512] = "";
 
@@ -3147,7 +3147,7 @@ static int SMTPHandleCmd_VRFY(char const *pszCommand, BSOCK_HANDLE hBSock, SMTPS
 UserInfoBean *pUI = UsrGetUserByNameOrAlias(szVrfyDomain, szVrfyUser);
 
 	if (pUI != NULL) {
-		char *pszRealName = UsrGetUserInfoVar(pUI, "RealName", "Unknown");
+		char *pszRealName = UsrGetUserInfoVar(*pUI, "RealName", "Unknown");
 
 		/*BSckVSendString(hBSock, SMTPS.pSMTPCfg->iTimeout,
 				"250 %s <%s@%s>", pszRealName, pUI->pszName, pUI->pszDomain);*/

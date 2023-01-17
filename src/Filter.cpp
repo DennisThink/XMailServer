@@ -167,7 +167,7 @@ UserInfoBean *pUI;
 	if (iFromDomains > 0 &&
 	    USmtpSplitEmailAddr(ppszFrom[iFromDomains - 1], szUser, szDomain) == 0) {
 		if ((pUI = UsrGetUserByNameOrAlias(szDomain, szUser)) != NULL) {
-			UsrGetAddress(pUI, FMI.szSender);
+			UsrGetAddress(*pUI, FMI.szSender);
 
 			//UsrFreeUserInfo(pUI);
 		} else
@@ -178,7 +178,7 @@ UserInfoBean *pUI;
 	if (iRcptDomains > 0 &&
 	    USmtpSplitEmailAddr(ppszRcpt[iRcptDomains - 1], szUser, szDomain) == 0) {
 		if ((pUI = UsrGetUserByNameOrAlias(szDomain, szUser)) != NULL) {
-			UsrGetAddress(pUI, FMI.szRecipient);
+			UsrGetAddress(*pUI, FMI.szRecipient);
 
 			//UsrFreeUserInfo(pUI);
 		} else
